@@ -2,16 +2,18 @@ import { useState, useCallback, useMemo } from "react";
 
 
 const LOGO_SRC = "data:image/jpeg;base64,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";
+const TOTAL_REGIONS_SENEGAL = 14; // 14 régions administratives du Sénégal
+
 const defaultData = {
   regions: [
     {
-      id: "r1", name: "Région Dakar", leader: "Frère Mbaye",
+      id: "r1", name: "Région Dakar", leader: "Frère Mbaye", createdDate: "2023-03-15",
       localites: [
         {
-          id: "l1", name: "Localité Plateau", leader: "Frère Diop",
+          id: "l1", name: "Localité Plateau", leader: "Frère Diop", createdDate: "2023-06-01",
           eglises: [
             {
-              id: "e1", name: "Église de Maison Plateau Centre", leader: "Sœur Ndiaye",
+              id: "e1", name: "Église de Maison Plateau Centre", leader: "Sœur Ndiaye", createdDate: "2023-06-15",
               members: [
                 { id: "m1", name: "Jean Faye", phone: "77 123 4567", role: "Membre", joinDate: "2024-01-15" },
                 { id: "m2", name: "Marie Diallo", phone: "78 234 5678", role: "Membre", joinDate: "2024-03-20" },
@@ -20,7 +22,7 @@ const defaultData = {
               ],
             },
             {
-              id: "e2", name: "Église de Maison Médina", leader: "Frère Sarr",
+              id: "e2", name: "Église de Maison Médina", leader: "Frère Sarr", createdDate: "2024-01-10",
               members: [
                 { id: "m5", name: "Pierre Thiam", phone: "77 567 8901", role: "Membre", joinDate: "2024-02-10" },
                 { id: "m6", name: "Esther Fall", phone: "78 678 9012", role: "Membre", joinDate: "2024-05-15" },
@@ -29,10 +31,10 @@ const defaultData = {
           ],
         },
         {
-          id: "l2", name: "Localité Parcelles Assainies", leader: "Frère Tall",
+          id: "l2", name: "Localité Parcelles Assainies", leader: "Frère Tall", createdDate: "2024-06-01",
           eglises: [
             {
-              id: "e3", name: "Église de Maison Parcelles U14", leader: "Sœur Cissé",
+              id: "e3", name: "Église de Maison Parcelles U14", leader: "Sœur Cissé", createdDate: "2024-07-15",
               members: [
                 { id: "m7", name: "Daniel Ndoye", phone: "77 789 0123", role: "Membre", joinDate: "2024-04-01" },
               ],
@@ -42,13 +44,13 @@ const defaultData = {
       ],
     },
     {
-      id: "r2", name: "Région Thiès", leader: "Frère Diagne",
+      id: "r2", name: "Région Thiès", leader: "Frère Diagne", createdDate: "2024-09-01",
       localites: [
         {
-          id: "l3", name: "Localité Thiès Centre", leader: "Frère Ba",
+          id: "l3", name: "Localité Thiès Centre", leader: "Frère Ba", createdDate: "2024-10-01",
           eglises: [
             {
-              id: "e4", name: "Église de Maison Thiès Nord", leader: "Frère Mboup",
+              id: "e4", name: "Église de Maison Thiès Nord", leader: "Frère Mboup", createdDate: "2024-11-01",
               members: [
                 { id: "m8", name: "Samuel Diouf", phone: "77 890 1234", role: "Membre", joinDate: "2024-01-20" },
                 { id: "m9", name: "Lydia Sow", phone: "78 901 2345", role: "Membre", joinDate: "2024-08-05" },
@@ -60,12 +62,12 @@ const defaultData = {
     },
   ],
   reports: [
-    { id: "rp1", egliseId: "e1", date: "2026-03-13", day: "Jeudi", summary: "Étude du Message de Bertoua - Leçon 5. Temps de prière puissant.", presents: ["m1", "m2", "m3"], absents: ["m4"], tithePayers: ["m1", "m3"], ministries: "2 témoignages, 1 prophétie, prière d'intercession", offering: 15000 },
-    { id: "rp2", egliseId: "e1", date: "2026-03-16", day: "Dimanche", summary: "Culte d'adoration. Prédication sur la foi. Communion fraternelle.", presents: ["m1", "m3", "m4"], absents: ["m2"], tithePayers: ["m1", "m4"], ministries: "3 témoignages, louange, prière pour les malades", offering: 20000 },
-    { id: "rp3", egliseId: "e1", date: "2026-03-09", day: "Dimanche", summary: "Message sur la sanctification. Temps de communion.", presents: ["m1", "m2", "m3", "m4"], absents: [], tithePayers: ["m1", "m2", "m3"], ministries: "2 témoignages, louange", offering: 18000 },
-    { id: "rp4", egliseId: "e1", date: "2026-03-06", day: "Jeudi", summary: "Message de Bertoua - Leçon 4. Exercices pratiques.", presents: ["m2", "m3", "m4"], absents: ["m1"], tithePayers: ["m2", "m3", "m4"], ministries: "1 témoignage, intercession", offering: 12000 },
-    { id: "rp5", egliseId: "e2", date: "2026-03-13", day: "Jeudi", summary: "Message de Bertoua - Leçon 4. Discussion enrichissante.", presents: ["m5"], absents: ["m6"], tithePayers: ["m5"], ministries: "1 témoignage, prière", offering: 8000 },
-    { id: "rp6", egliseId: "e4", date: "2026-03-16", day: "Dimanche", summary: "Culte dominical. Prédication sur l'amour fraternel.", presents: ["m8", "m9"], absents: [], tithePayers: ["m8"], ministries: "louange, 2 témoignages", offering: 10000 },
+    { id: "rp1", egliseId: "e1", date: "2026-03-13", day: "Jeudi", summary: "Étude du Message de Bertoua - Leçon 5. Temps de prière puissant.", presents: ["m1", "m2", "m3"], absents: ["m4"], tithePayers: ["m1", "m3"], ministries: "2 témoignages, 1 prophétie, prière d'intercession" },
+    { id: "rp2", egliseId: "e1", date: "2026-03-16", day: "Dimanche", summary: "Culte d'adoration. Prédication sur la foi. Communion fraternelle.", presents: ["m1", "m3", "m4"], absents: ["m2"], tithePayers: ["m1", "m4"], ministries: "3 témoignages, louange, prière pour les malades" },
+    { id: "rp3", egliseId: "e1", date: "2026-03-09", day: "Dimanche", summary: "Message sur la sanctification. Temps de communion.", presents: ["m1", "m2", "m3", "m4"], absents: [], tithePayers: ["m1", "m2", "m3"], ministries: "2 témoignages, louange" },
+    { id: "rp4", egliseId: "e1", date: "2026-03-06", day: "Jeudi", summary: "Message de Bertoua - Leçon 4. Exercices pratiques.", presents: ["m2", "m3", "m4"], absents: ["m1"], tithePayers: ["m2", "m3", "m4"], ministries: "1 témoignage, intercession" },
+    { id: "rp5", egliseId: "e2", date: "2026-03-13", day: "Jeudi", summary: "Message de Bertoua - Leçon 4. Discussion enrichissante.", presents: ["m5"], absents: ["m6"], tithePayers: ["m5"], ministries: "1 témoignage, prière" },
+    { id: "rp6", egliseId: "e4", date: "2026-03-16", day: "Dimanche", summary: "Culte dominical. Prédication sur l'amour fraternel.", presents: ["m8", "m9"], absents: [], tithePayers: ["m8"], ministries: "louange, 2 témoignages" },
   ],
   lessons: [
     { id: "ls1", number: 1, title: "La Nouvelle Naissance", description: "Fondement de la vie chrétienne" },
@@ -126,6 +128,62 @@ const getAllEglises = (d) => { const l=[]; d.regions.forEach(r=>r.localites.forE
 const getAllMembers = (d) => { const l=[]; getAllEglises(d).forEach(e=>e.members.forEach(m=>l.push({...m,egliseName:e.name,egliseId:e.id}))); return l; };
 const findEglise = (d, eid) => { for(const r of d.regions) for(const l of r.localites) for(const e of l.eglises) if(e.id===eid) return {eglise:e,localite:l,region:r}; return {}; };
 const getTitheStats = (d, mid, eid) => { const reps=d.reports.filter(r=>r.egliseId===eid); if(!reps.length) return {total:0,paid:0,pct:0}; const pr=reps.filter(r=>r.presents?.includes(mid)); const pd=pr.filter(r=>r.tithePayers?.includes(mid)); return {total:pr.length,paid:pd.length,pct:pr.length>0?Math.round((pd.length/pr.length)*100):0}; };
+
+// Evolution: count items created before a given date
+const getEvolutionByMonth = (items, dateField, months=6) => {
+  const result = [];
+  const now = new Date();
+  for (let i = months - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const end = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
+    const label = d.toLocaleDateString("fr-FR", { month: "short", year: "2-digit" });
+    const count = items.filter(it => new Date(it[dateField]) <= end).length;
+    result.push({ label, count });
+  }
+  return result;
+};
+
+function MiniChart({ data: chartData, color, height = 50 }) {
+  if (!chartData || chartData.length === 0) return null;
+  const max = Math.max(...chartData.map(d => d.count), 1);
+  const w = 100 / chartData.length;
+  return (
+    <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height, width: "100%" }}>
+      {chartData.map((d, i) => (
+        <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+          <div style={{ fontSize: 9, color: "#6889a8", fontWeight: 600 }}>{d.count}</div>
+          <div style={{ width: "100%", background: color, borderRadius: 3, height: Math.max(4, (d.count / max) * (height - 18)), opacity: 0.15 + (0.85 * (i / (chartData.length - 1))), transition: "height .3s" }} />
+          <div style={{ fontSize: 8, color: "#6889a8" }}>{d.label}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ProgressRing({ value, max, color, size = 80, label }) {
+  const pct = max > 0 ? Math.round((value / max) * 100) : 0;
+  const r = (size - 10) / 2;
+  const circ = 2 * Math.PI * r;
+  const offset = circ - (pct / 100) * circ;
+  return (
+    <div style={{ textAlign: "center" }}>
+      <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="#e0ecf6" strokeWidth="6" />
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth="6" strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round" style={{ transition: "stroke-dashoffset .5s" }} />
+      </svg>
+      <div style={{ marginTop: -size/2 - 8, fontSize: 18, fontWeight: 700, color: "#0a2a4a", fontFamily: "'Playfair Display',serif", position: "relative" }}>{value}/{max}</div>
+      <div style={{ fontSize: 11, color: "#6889a8", marginTop: size/2 - 14, position: "relative" }}>{label}</div>
+    </div>
+  );
+}
+
+function EvolutionBadge({ current, previous }) {
+  if (previous === 0 && current === 0) return null;
+  const diff = current - previous;
+  if (diff === 0) return <span style={{ fontSize: 11, color: "#6889a8" }}>= stable</span>;
+  const up = diff > 0;
+  return <span style={{ fontSize: 11, fontWeight: 600, color: up ? "#2d6a2d" : "#c0392b" }}>{up ? "▲" : "▼"} {up ? "+" : ""}{diff}</span>;
+}
 
 const inpS = { width:"100%", padding:"10px 14px", border:"2px solid #d4e4f4", borderRadius:10, fontSize:14, fontFamily:"'DM Sans',sans-serif", outline:"none", boxSizing:"border-box", transition:"border-color .2s", background:"#fff" };
 const lblS = { display:"block", marginBottom:6, fontSize:13, fontWeight:600, color:"#2a4a6a", fontFamily:"'DM Sans',sans-serif" };
@@ -193,23 +251,145 @@ export default function CMCIApp() {
 
   // ── Dashboard ──
   function PgDash(){
-    const stats=[
-      {label:"Régions",value:data.regions.length,color:"#1a6cb5"},
-      {label:"Localités",value:data.regions.reduce((s,r)=>s+r.localites.length,0),color:"#3b9bd9"},
-      {label:"Églises de Maison",value:allE.length,color:"#6b8f71"},
-      {label:"Membres",value:allM.length,color:"#5b7fa5"},
-      {label:"Régularité Dîmes",value:`${gTR}%`,color:"#2a7bc0"},
-      {label:"Offrandes (FCFA)",value:fmt(data.reports.reduce((s,r)=>s+(r.offering||0),0)),color:"#7a8b6f"},
-    ];
+    const totalLoc = data.regions.reduce((s,r)=>s+r.localites.length,0);
+    const leaders = new Set();
+    data.regions.forEach(r=>{leaders.add(r.leader);r.localites.forEach(l=>{leaders.add(l.leader);l.eglises.forEach(e=>leaders.add(e.leader));});});
+    const totalLeaders = leaders.size;
+
+    // Evolution data
+    const evoEglises = getEvolutionByMonth(allE, "createdDate", 6);
+    const evoMembers = getEvolutionByMonth(allM, "joinDate", 6);
+    const allLocs = []; data.regions.forEach(r=>r.localites.forEach(l=>allLocs.push(l)));
+    const evoLoc = getEvolutionByMonth(allLocs, "createdDate", 6);
+    const evoRegions = getEvolutionByMonth(data.regions, "createdDate", 6);
+
+    // Previous month for comparison
+    const prevMembers = evoMembers.length >= 2 ? evoMembers[evoMembers.length - 2].count : 0;
+    const prevEglises = evoEglises.length >= 2 ? evoEglises[evoEglises.length - 2].count : 0;
+    const prevLoc = evoLoc.length >= 2 ? evoLoc[evoLoc.length - 2].count : 0;
+
+    const cardS = {background:"#fff",borderRadius:14,padding:20,border:"1px solid #d4e4f4"};
+
     return(<div>
-      <div style={{marginBottom:32}}><h1 style={{fontSize:28,margin:0,color:"#0a2a4a",fontFamily:"'Playfair Display',serif"}}>Bienvenue, CMCI Sénégal</h1><p style={{color:"#6889a8",margin:"8px 0 0",fontSize:15}}>Vue d'ensemble de l'organisation</p></div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:16,marginBottom:32}}>
-        {stats.map(s=>(<div key={s.label} style={{background:"#fff",borderRadius:14,padding:20,border:"1px solid #d4e4f4",position:"relative",overflow:"hidden"}}>
-          <div style={{position:"absolute",top:0,left:0,width:4,height:"100%",background:s.color,borderRadius:"14px 0 0 14px"}}/>
-          <div style={{fontSize:13,color:"#6889a8",marginBottom:8,fontWeight:500}}>{s.label}</div>
-          <div style={{fontSize:26,fontWeight:700,color:"#0a2a4a",fontFamily:"'Playfair Display',serif"}}>{s.value}</div>
-        </div>))}
+      <div style={{marginBottom:28}}>
+        <h1 style={{fontSize:28,margin:0,color:"#0a2a4a",fontFamily:"'Playfair Display',serif"}}>Tableau de Bord — CMCI Sénégal</h1>
+        <p style={{color:"#6889a8",margin:"8px 0 0",fontSize:15}}>Vue d'ensemble et évolution de l'organisation</p>
       </div>
+
+      {/* Présence nationale */}
+      <div style={{...cardS,marginBottom:20,display:"flex",alignItems:"center",gap:24,flexWrap:"wrap"}}>
+        <ProgressRing value={data.regions.length} max={TOTAL_REGIONS_SENEGAL} color="#1a6cb5" size={90} label="Régions couvertes"/>
+        <div style={{flex:1,minWidth:200}}>
+          <h3 style={{margin:0,fontSize:16,color:"#0a2a4a",fontFamily:"'Playfair Display',serif"}}>Présence nationale</h3>
+          <p style={{margin:"6px 0 0",fontSize:13,color:"#6889a8"}}>
+            La CMCI est présente dans <strong style={{color:"#1a6cb5"}}>{data.regions.length}</strong> des <strong>{TOTAL_REGIONS_SENEGAL}</strong> régions du Sénégal
+            ({Math.round((data.regions.length/TOTAL_REGIONS_SENEGAL)*100)}% du territoire)
+          </p>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:10}}>
+            {data.regions.map(r=>(<Badge key={r.id} bg="#edf4fb" color="#1a6cb5">{r.name.replace("Région ","")}</Badge>))}
+          </div>
+        </div>
+      </div>
+
+      {/* Chiffres clés avec évolution */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(250px,1fr))",gap:16,marginBottom:24}}>
+        {/* Membres */}
+        <div style={cardS}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+            <div>
+              <div style={{fontSize:12,color:"#6889a8",fontWeight:500}}>Membres</div>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <span style={{fontSize:28,fontWeight:700,color:"#0a2a4a",fontFamily:"'Playfair Display',serif"}}>{allM.length}</span>
+                <EvolutionBadge current={allM.length} previous={prevMembers}/>
+              </div>
+            </div>
+            <div style={{color:"#5b7fa5"}}>{I.members}</div>
+          </div>
+          <MiniChart data={evoMembers} color="#5b7fa5"/>
+        </div>
+
+        {/* Églises de Maison */}
+        <div style={cardS}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+            <div>
+              <div style={{fontSize:12,color:"#6889a8",fontWeight:500}}>Églises de Maison</div>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <span style={{fontSize:28,fontWeight:700,color:"#0a2a4a",fontFamily:"'Playfair Display',serif"}}>{allE.length}</span>
+                <EvolutionBadge current={allE.length} previous={prevEglises}/>
+              </div>
+            </div>
+            <div style={{color:"#6b8f71"}}>{I.church}</div>
+          </div>
+          <MiniChart data={evoEglises} color="#6b8f71"/>
+        </div>
+
+        {/* Localités */}
+        <div style={cardS}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+            <div>
+              <div style={{fontSize:12,color:"#6889a8",fontWeight:500}}>Localités</div>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <span style={{fontSize:28,fontWeight:700,color:"#0a2a4a",fontFamily:"'Playfair Display',serif"}}>{totalLoc}</span>
+                <EvolutionBadge current={totalLoc} previous={prevLoc}/>
+              </div>
+            </div>
+            <div style={{color:"#3b9bd9"}}>{I.localite}</div>
+          </div>
+          <MiniChart data={evoLoc} color="#3b9bd9"/>
+        </div>
+
+        {/* Dirigeants */}
+        <div style={cardS}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+            <div>
+              <div style={{fontSize:12,color:"#6889a8",fontWeight:500}}>Dirigeants</div>
+              <span style={{fontSize:28,fontWeight:700,color:"#0a2a4a",fontFamily:"'Playfair Display',serif"}}>{totalLeaders}</span>
+            </div>
+            <div style={{color:"#2a7bc0"}}>{I.members}</div>
+          </div>
+          <div style={{fontSize:12,color:"#6889a8",marginTop:8}}>
+            {data.regions.length} de régions · {totalLoc} de localités · {allE.length} d'églises
+          </div>
+        </div>
+      </div>
+
+      {/* Dîmes + Rapports */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(250px,1fr))",gap:16,marginBottom:24}}>
+        <div style={cardS}>
+          <div style={{fontSize:12,color:"#6889a8",fontWeight:500,marginBottom:4}}>Régularité Dîmes</div>
+          <div style={{fontSize:28,fontWeight:700,color:gTR>=75?"#2d6a2d":gTR>=50?"#856d12":"#922b21",fontFamily:"'Playfair Display',serif"}}>{gTR}%</div>
+          <div style={{marginTop:8}}><TitheBar pct={gTR}/></div>
+        </div>
+        <div style={cardS}>
+          <div style={{fontSize:12,color:"#6889a8",fontWeight:500,marginBottom:4}}>Rapports soumis</div>
+          <div style={{fontSize:28,fontWeight:700,color:"#0a2a4a",fontFamily:"'Playfair Display',serif"}}>{data.reports.length}</div>
+          <div style={{fontSize:12,color:"#6889a8",marginTop:8}}>{data.reports.filter(r=>r.day==="Dimanche").length} dimanches · {data.reports.filter(r=>r.day==="Jeudi").length} jeudis</div>
+        </div>
+      </div>
+
+      {/* Répartition par région */}
+      <h3 style={{fontSize:18,color:"#0a2a4a",marginBottom:16,fontFamily:"'Playfair Display',serif"}}>Répartition par Région</h3>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:12,marginBottom:28}}>
+        {data.regions.map(r=>{
+          const rLoc=r.localites.length;
+          const rEgl=r.localites.reduce((s,l)=>s+l.eglises.length,0);
+          const rMem=r.localites.reduce((s,l)=>s+l.eglises.reduce((s2,e)=>s2+e.members.length,0),0);
+          return(<div key={r.id} style={{...cardS,cursor:"pointer"}} onClick={()=>nav("regions",{region:r.id})}
+            onMouseEnter={ev=>{ev.currentTarget.style.transform="translateY(-2px)";ev.currentTarget.style.boxShadow="0 6px 20px rgba(0,0,0,0.06)";}}
+            onMouseLeave={ev=>{ev.currentTarget.style.transform="";ev.currentTarget.style.boxShadow="";}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <h4 style={{margin:0,fontSize:15,color:"#0a2a4a"}}>{r.name}</h4>
+              <span style={{color:"#3b9bd9"}}>{I.chev}</span>
+            </div>
+            <div style={{display:"flex",gap:16,marginTop:10,fontSize:13,color:"#2a4a6a"}}>
+              <span>{rLoc} localité(s)</span><span>{rEgl} église(s)</span><span style={{fontWeight:600}}>{rMem} membre(s)</span>
+            </div>
+            <div style={{fontSize:12,color:"#6889a8",marginTop:6}}>Dirigeant: {r.leader}</div>
+          </div>);
+        })}
+      </div>
+
+      {/* Derniers rapports */}
       <h3 style={{fontSize:18,color:"#0a2a4a",marginBottom:16,fontFamily:"'Playfair Display',serif"}}>Derniers Rapports</h3>
       <div style={{display:"flex",flexDirection:"column",gap:10}}>
         {data.reports.sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5).map(rp=>{const info=findEglise(data,rp.egliseId);return(
@@ -249,16 +429,32 @@ export default function CMCIApp() {
 
   function PgRegionDet(){
     const region=data.regions.find(r=>r.id===sel.region); if(!region) return null;
+    const rMem=[]; region.localites.forEach(l=>l.eglises.forEach(e=>e.members.forEach(m=>rMem.push(m))));
+    const rEgl=[]; region.localites.forEach(l=>l.eglises.forEach(e=>rEgl.push(e)));
+    const evoM=getEvolutionByMonth(rMem,"joinDate",6);
+    const evoE=getEvolutionByMonth(rEgl,"createdDate",6);
     return(<div>
       <button onClick={()=>nav("regions")} style={{...btnS,marginBottom:20,padding:"8px 16px"}}>{I.back} Retour</button>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24,flexWrap:"wrap",gap:12}}>
-        <div><h2 style={{margin:0,fontSize:24,color:"#0a2a4a",fontFamily:"'Playfair Display',serif"}}>{region.name}</h2><p style={{margin:"6px 0 0",fontSize:14,color:"#6889a8"}}>Dirigeant: {region.leader}</p></div>
-        <button style={btnP} onClick={()=>setModal("addLocalite")}>{I.plus} Nouvelle Localité</button>
+      <div style={{background:"#fff",borderRadius:16,padding:24,border:"1px solid #d4e4f4",marginBottom:24}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12}}>
+          <div><h2 style={{margin:0,fontSize:24,color:"#0a2a4a",fontFamily:"'Playfair Display',serif"}}>{region.name}</h2><p style={{margin:"6px 0 0",fontSize:14,color:"#6889a8"}}>Dirigeant: {region.leader}</p></div>
+          <button style={btnP} onClick={()=>setModal("addLocalite")}>{I.plus} Nouvelle Localité</button>
+        </div>
+        <div style={{display:"flex",gap:24,marginTop:16,flexWrap:"wrap"}}>
+          <div style={{padding:"10px 16px",background:"#edf4fb",borderRadius:10,textAlign:"center"}}><div style={{fontSize:22,fontWeight:700,color:"#0a2a4a",fontFamily:"'Playfair Display',serif"}}>{region.localites.length}</div><div style={{fontSize:11,color:"#6889a8"}}>Localités</div></div>
+          <div style={{padding:"10px 16px",background:"#edf4fb",borderRadius:10,textAlign:"center"}}><div style={{fontSize:22,fontWeight:700,color:"#0a2a4a",fontFamily:"'Playfair Display',serif"}}>{rEgl.length}</div><div style={{fontSize:11,color:"#6889a8"}}>Églises</div></div>
+          <div style={{padding:"10px 16px",background:"#edf4fb",borderRadius:10,textAlign:"center"}}><div style={{fontSize:22,fontWeight:700,color:"#0a2a4a",fontFamily:"'Playfair Display',serif"}}>{rMem.length}</div><div style={{fontSize:11,color:"#6889a8"}}>Membres</div></div>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginTop:16}}>
+          <div><div style={{fontSize:11,color:"#6889a8",marginBottom:4}}>Évolution membres</div><MiniChart data={evoM} color="#5b7fa5" height={40}/></div>
+          <div><div style={{fontSize:11,color:"#6889a8",marginBottom:4}}>Évolution églises</div><MiniChart data={evoE} color="#6b8f71" height={40}/></div>
+        </div>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:16}}>
-        {region.localites.map(l=>(<div key={l.id} onClick={()=>nav("regions",{region:sel.region,localite:l.id})} style={{background:"#fff",borderRadius:14,padding:20,cursor:"pointer",border:"1px solid #d4e4f4",transition:"transform .15s"}} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";}} onMouseLeave={e=>{e.currentTarget.style.transform="";}}>
-          <h3 style={{margin:0,fontSize:16,color:"#0a2a4a"}}>{l.name}</h3><p style={{margin:"6px 0 0",fontSize:13,color:"#6889a8"}}>Dirigeant: {l.leader}</p><p style={{margin:"8px 0 0",fontSize:13,color:"#2a4a6a"}}>{l.eglises.length} église(s)</p>
-        </div>))}
+        {region.localites.map(l=>{const lMem=l.eglises.reduce((s,e)=>s+e.members.length,0);return(<div key={l.id} onClick={()=>nav("regions",{region:sel.region,localite:l.id})} style={{background:"#fff",borderRadius:14,padding:20,cursor:"pointer",border:"1px solid #d4e4f4",transition:"transform .15s"}} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";}} onMouseLeave={e=>{e.currentTarget.style.transform="";}}>
+          <h3 style={{margin:0,fontSize:16,color:"#0a2a4a"}}>{l.name}</h3><p style={{margin:"6px 0 0",fontSize:13,color:"#6889a8"}}>Dirigeant: {l.leader}</p>
+          <div style={{display:"flex",gap:12,marginTop:8,fontSize:13,color:"#2a4a6a"}}><span>{l.eglises.length} église(s)</span><span style={{fontWeight:600}}>{lMem} membre(s)</span></div>
+        </div>);})}
       </div>
       <MdAddLocalite region={region}/>
     </div>);
@@ -266,11 +462,24 @@ export default function CMCIApp() {
 
   function PgLocalite(){
     const region=data.regions.find(r=>r.id===sel.region); const loc=region?.localites.find(l=>l.id===sel.localite); if(!loc) return null;
+    const lMem=[]; loc.eglises.forEach(e=>e.members.forEach(m=>lMem.push(m)));
+    const evoM=getEvolutionByMonth(lMem,"joinDate",6);
+    const evoE=getEvolutionByMonth(loc.eglises,"createdDate",6);
     return(<div>
       <button onClick={()=>nav("regions",{region:sel.region})} style={{...btnS,marginBottom:20,padding:"8px 16px"}}>{I.back} Retour à {region.name}</button>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24,flexWrap:"wrap",gap:12}}>
-        <div><h2 style={{margin:0,fontSize:24,color:"#0a2a4a",fontFamily:"'Playfair Display',serif"}}>{loc.name}</h2><p style={{margin:"6px 0 0",fontSize:14,color:"#6889a8"}}>Dirigeant: {loc.leader} — {region.name}</p></div>
-        <button style={btnP} onClick={()=>setModal("addEglise")}>{I.plus} Nouvelle Église</button>
+      <div style={{background:"#fff",borderRadius:16,padding:24,border:"1px solid #d4e4f4",marginBottom:24}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12}}>
+          <div><h2 style={{margin:0,fontSize:24,color:"#0a2a4a",fontFamily:"'Playfair Display',serif"}}>{loc.name}</h2><p style={{margin:"6px 0 0",fontSize:14,color:"#6889a8"}}>Dirigeant: {loc.leader} — {region.name}</p></div>
+          <button style={btnP} onClick={()=>setModal("addEglise")}>{I.plus} Nouvelle Église</button>
+        </div>
+        <div style={{display:"flex",gap:24,marginTop:16,flexWrap:"wrap"}}>
+          <div style={{padding:"10px 16px",background:"#edf4fb",borderRadius:10,textAlign:"center"}}><div style={{fontSize:22,fontWeight:700,color:"#0a2a4a",fontFamily:"'Playfair Display',serif"}}>{loc.eglises.length}</div><div style={{fontSize:11,color:"#6889a8"}}>Églises</div></div>
+          <div style={{padding:"10px 16px",background:"#edf4fb",borderRadius:10,textAlign:"center"}}><div style={{fontSize:22,fontWeight:700,color:"#0a2a4a",fontFamily:"'Playfair Display',serif"}}>{lMem.length}</div><div style={{fontSize:11,color:"#6889a8"}}>Membres</div></div>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginTop:16}}>
+          <div><div style={{fontSize:11,color:"#6889a8",marginBottom:4}}>Évolution membres</div><MiniChart data={evoM} color="#5b7fa5" height={40}/></div>
+          <div><div style={{fontSize:11,color:"#6889a8",marginBottom:4}}>Évolution églises</div><MiniChart data={evoE} color="#6b8f71" height={40}/></div>
+        </div>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:16}}>
         {loc.eglises.map(e=>(<div key={e.id} style={{background:"#fff",borderRadius:14,padding:20,border:"1px solid #d4e4f4",transition:"transform .15s"}} onMouseEnter={ev=>{ev.currentTarget.style.transform="translateY(-2px)";}} onMouseLeave={ev=>{ev.currentTarget.style.transform="";}}>
@@ -291,11 +500,23 @@ export default function CMCIApp() {
     const info=findEglise(data,sel.eglise); if(!info.eglise) return null;
     const {eglise,localite,region}=info;
     const reps=data.reports.filter(r=>r.egliseId===eglise.id).sort((a,b)=>b.date.localeCompare(a.date));
+    const evoMem=getEvolutionByMonth(eglise.members,"joinDate",6);
+    const prevMem=evoMem.length>=2?evoMem[evoMem.length-2].count:0;
     return(<div>
       <button onClick={()=>{if(sel.localite) nav("regions",{region:region.id,localite:localite.id}); else nav("eglises");}} style={{...btnS,marginBottom:20,padding:"8px 16px"}}>{I.back} Retour</button>
       <div style={{background:"#fff",borderRadius:16,padding:24,border:"1px solid #d4e4f4",marginBottom:24}}>
         <h2 style={{margin:0,fontSize:22,color:"#0a2a4a",fontFamily:"'Playfair Display',serif"}}>{eglise.name}</h2>
         <p style={{margin:"8px 0 0",fontSize:14,color:"#6889a8"}}>{region.name} → {localite.name} — Dirigeant: {eglise.leader}</p>
+        <div style={{display:"flex",gap:24,marginTop:16,flexWrap:"wrap",alignItems:"center"}}>
+          <div style={{padding:"10px 16px",background:"#edf4fb",borderRadius:10,textAlign:"center"}}>
+            <div style={{display:"flex",alignItems:"center",gap:6}}>
+              <span style={{fontSize:22,fontWeight:700,color:"#0a2a4a",fontFamily:"'Playfair Display',serif"}}>{eglise.members.length}</span>
+              <EvolutionBadge current={eglise.members.length} previous={prevMem}/>
+            </div>
+            <div style={{fontSize:11,color:"#6889a8"}}>Membres</div>
+          </div>
+          <div style={{flex:1,minWidth:150,maxWidth:300}}><MiniChart data={evoMem} color="#5b7fa5" height={40}/></div>
+        </div>
       </div>
 
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:8}}>
@@ -338,7 +559,6 @@ export default function CMCIApp() {
             <span style={{color:"#6b8f71"}}>✓ {rp.presents?.length||0} présent(s)</span>
             <span style={{color:"#c0392b"}}>✗ {rp.absents?.length||0} absent(s)</span>
             <span style={{color:"#2a7bc0"}}>♥ {rp.tithePayers?.length||0} dîmeur(s)</span>
-            <span style={{color:"#7a8b6f"}}>Offrande: {fmt(rp.offering||0)} FCFA</span>
           </div>
           {rp.tithePayers?.length>0&&<div style={{marginTop:8,fontSize:12,color:"#6889a8"}}><strong>Ont payé la dîme:</strong> {rp.tithePayers.map(pid=>eglise.members.find(m=>m.id===pid)?.name||"—").join(", ")}</div>}
           <div style={{marginTop:6,fontSize:13,color:"#6889a8"}}><strong>Ministères:</strong> {rp.ministries}</div>
@@ -405,7 +625,7 @@ export default function CMCIApp() {
           <div><label style={lblS}>Dirigeant</label><input style={inpS} value={l} onChange={e=>sL(e.target.value)} placeholder="Nom du dirigeant"/></div>
           <button style={btnP} onClick={()=>{
             if(!n.trim()||!rId) return;
-            upd(d=>{d.regions.find(r=>r.id===rId).localites.push({id:uid(),name:n,leader:l,eglises:[]});});
+            upd(d=>{d.regions.find(r=>r.id===rId).localites.push({id:uid(),name:n,leader:l,createdDate:new Date().toISOString().slice(0,10),eglises:[]});});
             setModal(null);sRId("");
           }}>{I.check} Créer la Localité</button>
         </>}
@@ -418,22 +638,47 @@ export default function CMCIApp() {
     if(sel.eglise) return <PgEgliseDet/>;
     return(<div>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24,flexWrap:"wrap",gap:12}}>
-        <h2 style={{margin:0,fontSize:24,color:"#0a2a4a",fontFamily:"'Playfair Display',serif"}}>Toutes les Églises de Maison</h2>
+        <h2 style={{margin:0,fontSize:24,color:"#0a2a4a",fontFamily:"'Playfair Display',serif"}}>Églises de Maison ({allE.length})</h2>
         <button style={btnP} onClick={()=>setModal("addEgliseGlobal")}>{I.plus} Nouvelle Église</button>
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:16}}>
-        {allE.map(e=>(<div key={e.id} style={{background:"#fff",borderRadius:14,padding:20,border:"1px solid #d4e4f4",transition:"transform .15s"}} onMouseEnter={ev=>{ev.currentTarget.style.transform="translateY(-2px)";}} onMouseLeave={ev=>{ev.currentTarget.style.transform="";}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"start"}}>
-            <div style={{cursor:"pointer",flex:1}} onClick={()=>nav("eglises",{eglise:e.id})}>
-              <h3 style={{margin:0,fontSize:15,color:"#0a2a4a"}}>{e.name}</h3>
-              <p style={{margin:"4px 0 0",fontSize:12,color:"#3b9bd9"}}>{e.regionName} → {e.localiteName}</p>
-              <p style={{margin:"6px 0 0",fontSize:13,color:"#6889a8"}}>Dirigeant: {e.leader}</p>
-              <p style={{margin:"8px 0 0",fontSize:13,color:"#6b8f71",fontWeight:600}}>{e.members.length} membre(s)</p>
-            </div>
-            <ConfirmBtn onConfirm={()=>upd(d=>{for(const r of d.regions)for(const l of r.localites)l.eglises=l.eglises.filter(x=>x.id!==e.id);d.reports=d.reports.filter(r=>r.egliseId!==e.id);})}/>
+      {data.regions.map(r=>{
+        const rMem=r.localites.reduce((s,l)=>s+l.eglises.reduce((s2,e)=>s2+e.members.length,0),0);
+        const rEgl=r.localites.reduce((s,l)=>s+l.eglises.length,0);
+        return(<div key={r.id} style={{marginBottom:28}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4,cursor:"pointer"}} onClick={()=>nav("regions",{region:r.id})}>
+            <span style={{color:"#1a6cb5"}}>{I.region}</span>
+            <h3 style={{margin:0,fontSize:17,color:"#0a2a4a",fontFamily:"'Playfair Display',serif"}}>{r.name}</h3>
+            <Badge bg="#edf4fb" color="#1a6cb5">{rEgl} église(s) · {rMem} membre(s)</Badge>
           </div>
-        </div>))}
-      </div>
+          <div style={{fontSize:12,color:"#6889a8",marginBottom:14,marginLeft:30}}>Dirigeant: {r.leader}</div>
+          {r.localites.map(l=>{
+            const lMem=l.eglises.reduce((s,e)=>s+e.members.length,0);
+            return(<div key={l.id} style={{marginLeft:16,marginBottom:16}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+                <span style={{color:"#3b9bd9",transform:"scale(0.85)"}}>{I.localite}</span>
+                <span style={{fontSize:14,fontWeight:600,color:"#2a4a6a"}}>{l.name}</span>
+                <span style={{fontSize:12,color:"#6889a8"}}>({lMem} membre(s)) · Dir: {l.leader}</span>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:12,marginLeft:16}}>
+                {l.eglises.map(e=>{
+                  const evoM=getEvolutionByMonth(e.members,"joinDate",4);
+                  return(<div key={e.id} style={{background:"#fff",borderRadius:14,padding:16,border:"1px solid #d4e4f4",transition:"transform .15s"}} onMouseEnter={ev=>{ev.currentTarget.style.transform="translateY(-2px)";}} onMouseLeave={ev=>{ev.currentTarget.style.transform="";}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"start"}}>
+                      <div style={{cursor:"pointer",flex:1}} onClick={()=>nav("eglises",{eglise:e.id})}>
+                        <h4 style={{margin:0,fontSize:14,color:"#0a2a4a"}}>{e.name}</h4>
+                        <p style={{margin:"4px 0 0",fontSize:12,color:"#6889a8"}}>Dir: {e.leader}</p>
+                        <p style={{margin:"6px 0 0",fontSize:13,color:"#6b8f71",fontWeight:600}}>{e.members.length} membre(s)</p>
+                      </div>
+                      <ConfirmBtn onConfirm={()=>upd(d=>{for(const rx of d.regions)for(const lx of rx.localites)lx.eglises=lx.eglises.filter(x=>x.id!==e.id);d.reports=d.reports.filter(rx=>rx.egliseId!==e.id);})}/>
+                    </div>
+                    <div style={{marginTop:10}}><MiniChart data={evoM} color="#5b7fa5" height={35}/></div>
+                  </div>);
+                })}
+              </div>
+            </div>);
+          })}
+        </div>);
+      })}
       <MdAddEgliseGlobal/>
     </div>);
   }
@@ -528,7 +773,6 @@ export default function CMCIApp() {
       return true;
     }).sort((a,b)=>b.date.localeCompare(a.date));
 
-    const totalOff=filtered.reduce((s,r)=>s+(r.offering||0),0);
     const totalPres=filtered.reduce((s,r)=>s+(r.presents?.length||0),0);
     const totalAbs=filtered.reduce((s,r)=>s+(r.absents?.length||0),0);
     const totalTithe=filtered.reduce((s,r)=>s+(r.tithePayers?.length||0),0);
@@ -581,7 +825,6 @@ export default function CMCIApp() {
           {label:"Présents",value:totalPres,color:"#6b8f71"},
           {label:"Absents",value:totalAbs,color:"#c0392b"},
           {label:"Dîmeurs",value:totalTithe,color:"#2a7bc0"},
-          {label:"Offrandes",value:fmt(totalOff)+" F",color:"#7a8b6f"},
         ].map(s=>(<div key={s.label} style={{background:"#fff",borderRadius:12,padding:14,border:"1px solid #d4e4f4",position:"relative",overflow:"hidden"}}>
           <div style={{position:"absolute",top:0,left:0,width:3,height:"100%",background:s.color}}/>
           <div style={{fontSize:11,color:"#6889a8",marginBottom:4,fontWeight:500}}>{s.label}</div>
@@ -603,7 +846,7 @@ export default function CMCIApp() {
             <p style={{margin:"12px 0 0",fontSize:14,color:"#0a2a4a",lineHeight:1.5}}>{rp.summary}</p>
             <div style={{display:"flex",gap:16,marginTop:12,flexWrap:"wrap",fontSize:13}}>
               <span style={{color:"#6b8f71"}}>✓ {rp.presents?.length||0}</span><span style={{color:"#c0392b"}}>✗ {rp.absents?.length||0}</span>
-              <span style={{color:"#2a7bc0"}}>♥ {rp.tithePayers?.length||0} dîmeur(s)</span><span style={{color:"#7a8b6f"}}>Offrande: {fmt(rp.offering||0)} FCFA</span>
+              <span style={{color:"#2a7bc0"}}>♥ {rp.tithePayers?.length||0} dîmeur(s)</span>
             </div>
           </div>);})}
       </div>
@@ -691,11 +934,11 @@ export default function CMCIApp() {
   }
 
   // ── Modals ──
-  function MdAddRegion(){const [n,sN]=useState("");const [l,sL]=useState("");return(<Modal open={modal==="addRegion"} onClose={()=>setModal(null)} title="Nouvelle Région"><div style={{display:"flex",flexDirection:"column",gap:16}}><div><label style={lblS}>Nom</label><input style={inpS} value={n} onChange={e=>sN(e.target.value)} placeholder="Ex: Région Saint-Louis"/></div><div><label style={lblS}>Dirigeant</label><input style={inpS} value={l} onChange={e=>sL(e.target.value)} placeholder="Nom du dirigeant"/></div><button style={btnP} onClick={()=>{if(!n.trim())return;upd(d=>d.regions.push({id:uid(),name:n,leader:l,localites:[]}));setModal(null);}}>{I.check} Créer</button></div></Modal>);}
+  function MdAddRegion(){const [n,sN]=useState("");const [l,sL]=useState("");return(<Modal open={modal==="addRegion"} onClose={()=>setModal(null)} title="Nouvelle Région"><div style={{display:"flex",flexDirection:"column",gap:16}}><div><label style={lblS}>Nom</label><input style={inpS} value={n} onChange={e=>sN(e.target.value)} placeholder="Ex: Région Saint-Louis"/></div><div><label style={lblS}>Dirigeant</label><input style={inpS} value={l} onChange={e=>sL(e.target.value)} placeholder="Nom du dirigeant"/></div><button style={btnP} onClick={()=>{if(!n.trim())return;upd(d=>d.regions.push({id:uid(),name:n,leader:l,createdDate:new Date().toISOString().slice(0,10),localites:[]}));setModal(null);}}>{I.check} Créer</button></div></Modal>);}
 
-  function MdAddLocalite({region}){const [n,sN]=useState("");const [l,sL]=useState("");return(<Modal open={modal==="addLocalite"} onClose={()=>setModal(null)} title="Nouvelle Localité"><div style={{display:"flex",flexDirection:"column",gap:16}}><div><label style={lblS}>Nom</label><input style={inpS} value={n} onChange={e=>sN(e.target.value)} placeholder="Ex: Localité Guédiawaye"/></div><div><label style={lblS}>Dirigeant</label><input style={inpS} value={l} onChange={e=>sL(e.target.value)} placeholder="Nom du dirigeant"/></div><button style={btnP} onClick={()=>{if(!n.trim()||!region)return;upd(d=>{d.regions.find(x=>x.id===region.id).localites.push({id:uid(),name:n,leader:l,eglises:[]});});setModal(null);}}>{I.check} Créer</button></div></Modal>);}
+  function MdAddLocalite({region}){const [n,sN]=useState("");const [l,sL]=useState("");return(<Modal open={modal==="addLocalite"} onClose={()=>setModal(null)} title="Nouvelle Localité"><div style={{display:"flex",flexDirection:"column",gap:16}}><div><label style={lblS}>Nom</label><input style={inpS} value={n} onChange={e=>sN(e.target.value)} placeholder="Ex: Localité Guédiawaye"/></div><div><label style={lblS}>Dirigeant</label><input style={inpS} value={l} onChange={e=>sL(e.target.value)} placeholder="Nom du dirigeant"/></div><button style={btnP} onClick={()=>{if(!n.trim()||!region)return;upd(d=>{d.regions.find(x=>x.id===region.id).localites.push({id:uid(),name:n,leader:l,createdDate:new Date().toISOString().slice(0,10),eglises:[]});});setModal(null);}}>{I.check} Créer</button></div></Modal>);}
 
-  function MdAddEglise({localite}){const [n,sN]=useState("");const [l,sL]=useState("");return(<Modal open={modal==="addEglise"} onClose={()=>setModal(null)} title="Nouvelle Église de Maison"><div style={{display:"flex",flexDirection:"column",gap:16}}><div><label style={lblS}>Nom</label><input style={inpS} value={n} onChange={e=>sN(e.target.value)} placeholder="Ex: Église de Maison Liberté 6"/></div><div><label style={lblS}>Dirigeant</label><input style={inpS} value={l} onChange={e=>sL(e.target.value)} placeholder="Nom du dirigeant"/></div><button style={btnP} onClick={()=>{if(!n.trim()||!localite)return;upd(d=>{for(const r of d.regions)for(const lo of r.localites)if(lo.id===localite.id)lo.eglises.push({id:uid(),name:n,leader:l,members:[]});});setModal(null);}}>{I.check} Créer</button></div></Modal>);}
+  function MdAddEglise({localite}){const [n,sN]=useState("");const [l,sL]=useState("");return(<Modal open={modal==="addEglise"} onClose={()=>setModal(null)} title="Nouvelle Église de Maison"><div style={{display:"flex",flexDirection:"column",gap:16}}><div><label style={lblS}>Nom</label><input style={inpS} value={n} onChange={e=>sN(e.target.value)} placeholder="Ex: Église de Maison Liberté 6"/></div><div><label style={lblS}>Dirigeant</label><input style={inpS} value={l} onChange={e=>sL(e.target.value)} placeholder="Nom du dirigeant"/></div><button style={btnP} onClick={()=>{if(!n.trim()||!localite)return;upd(d=>{for(const r of d.regions)for(const lo of r.localites)if(lo.id===localite.id)lo.eglises.push({id:uid(),name:n,leader:l,createdDate:new Date().toISOString().slice(0,10),members:[]});});setModal(null);}}>{I.check} Créer</button></div></Modal>);}
 
   function MdAddEgliseGlobal(){
     const [rId,sRId]=useState("");
@@ -726,7 +969,7 @@ export default function CMCIApp() {
           <div><label style={lblS}>Dirigeant</label><input style={inpS} value={l} onChange={e=>sL(e.target.value)} placeholder="Nom du dirigeant"/></div>
           <button style={btnP} onClick={()=>{
             if(!n.trim()||!lId) return;
-            upd(d=>{for(const r of d.regions) for(const lo of r.localites) if(lo.id===lId) lo.eglises.push({id:uid(),name:n,leader:l,members:[]});});
+            upd(d=>{for(const r of d.regions) for(const lo of r.localites) if(lo.id===lId) lo.eglises.push({id:uid(),name:n,leader:l,createdDate:new Date().toISOString().slice(0,10),members:[]});});
             setModal(null);sRId("");sLId("");
           }}>{I.check} Créer l'Église</button>
         </>}
@@ -737,7 +980,7 @@ export default function CMCIApp() {
   function MdAddMember({eglise}){const [n,sN]=useState("");const [p,sP]=useState("");const [r,sR]=useState("Membre");return(<Modal open={modal==="addMember"} onClose={()=>setModal(null)} title="Ajouter un Membre"><div style={{display:"flex",flexDirection:"column",gap:16}}><div><label style={lblS}>Nom complet</label><input style={inpS} value={n} onChange={e=>sN(e.target.value)} placeholder="Prénom et nom"/></div><div><label style={lblS}>Téléphone</label><input style={inpS} value={p} onChange={e=>sP(e.target.value)} placeholder="77 XXX XXXX"/></div><div><label style={lblS}>Rôle</label><select style={inpS} value={r} onChange={e=>sR(e.target.value)}><option value="Membre">Membre</option><option value="Ancien">Ancien</option><option value="Diacre">Diacre</option><option value="Dirigeant">Dirigeant</option></select></div><button style={btnP} onClick={()=>{if(!n.trim()||!eglise)return;upd(d=>{findEglise(d,eglise.id).eglise.members.push({id:uid(),name:n,phone:p,role:r,joinDate:new Date().toISOString().slice(0,10)});});setModal(null);}}>{I.check} Ajouter</button></div></Modal>);}
 
   function MdAddReport({eglise}){
-    const [day,sDay]=useState("Jeudi");const [date,sDate]=useState(new Date().toISOString().slice(0,10));const [sum,sSum]=useState("");const [min,sMin]=useState("");const [off,sOff]=useState("");const [pres,sPres]=useState([]);const [tp,sTp]=useState([]);
+    const [day,sDay]=useState("Jeudi");const [date,sDate]=useState(new Date().toISOString().slice(0,10));const [sum,sSum]=useState("");const [min,sMin]=useState("");const [pres,sPres]=useState([]);const [tp,sTp]=useState([]);
     if(!eglise) return null;
     return(<Modal open={modal==="addReport"} onClose={()=>setModal(null)} title="Nouveau Rapport"><div style={{display:"flex",flexDirection:"column",gap:16}}>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
@@ -756,8 +999,7 @@ export default function CMCIApp() {
         </label>))}
       </div></div>}
       <div><label style={lblS}>Ministères rendus</label><input style={inpS} value={min} onChange={e=>sMin(e.target.value)} placeholder="Ex: 2 témoignages, prière, louange"/></div>
-      <div><label style={lblS}>Offrande (FCFA)</label><input style={inpS} type="number" value={off} onChange={e=>sOff(e.target.value)} placeholder="0"/></div>
-      <button style={btnP} onClick={()=>{if(!sum.trim())return;const abs=eglise.members.map(m=>m.id).filter(id=>!pres.includes(id));upd(d=>{d.reports.push({id:uid(),egliseId:eglise.id,date,day,summary:sum,presents:pres,absents:abs,tithePayers:tp,ministries:min,offering:parseInt(off)||0});});setModal(null);}}>{I.check} Enregistrer</button>
+      <button style={btnP} onClick={()=>{if(!sum.trim())return;const abs=eglise.members.map(m=>m.id).filter(id=>!pres.includes(id));upd(d=>{d.reports.push({id:uid(),egliseId:eglise.id,date,day,summary:sum,presents:pres,absents:abs,tithePayers:tp,ministries:min});});setModal(null);}}>{I.check} Enregistrer</button>
     </div></Modal>);
   }
 
