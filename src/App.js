@@ -123,7 +123,6 @@ const I = {
 };
 
 const uid = () => Math.random().toString(36).slice(2, 10);
-const fmt = (n) => new Intl.NumberFormat("fr-FR").format(n);
 const getAllEglises = (d) => { const l=[]; d.regions.forEach(r=>r.localites.forEach(lo=>lo.eglises.forEach(e=>l.push({...e,regionName:r.name,localiteName:lo.name,regionId:r.id,localiteId:lo.id})))); return l; };
 const getAllMembers = (d) => { const l=[]; getAllEglises(d).forEach(e=>e.members.forEach(m=>l.push({...m,egliseName:e.name,egliseId:e.id}))); return l; };
 const findEglise = (d, eid) => { for(const r of d.regions) for(const l of r.localites) for(const e of l.eglises) if(e.id===eid) return {eglise:e,localite:l,region:r}; return {}; };
@@ -143,19 +142,33 @@ const getEvolutionByMonth = (items, dateField, months=6) => {
   return result;
 };
 
-function MiniChart({ data: chartData, color, height = 50 }) {
-  if (!chartData || chartData.length === 0) return null;
+function LineChart({ data: chartData, color, height = 70, showArea = true }) {
+  if (!chartData || chartData.length < 2) return null;
   const max = Math.max(...chartData.map(d => d.count), 1);
+  const padding = { top: 14, bottom: 20, left: 8, right: 8 };
+  const w = 300;
+  const h = height;
+  const plotW = w - padding.left - padding.right;
+  const plotH = h - padding.top - padding.bottom;
+  const points = chartData.map((d, i) => ({
+    x: padding.left + (i / (chartData.length - 1)) * plotW,
+    y: padding.top + plotH - (d.count / max) * plotH,
+    ...d,
+  }));
+  const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ");
+  const areaPath = linePath + ` L${points[points.length-1].x},${padding.top+plotH} L${points[0].x},${padding.top+plotH} Z`;
   return (
-    <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height, width: "100%" }}>
-      {chartData.map((d, i) => (
-        <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-          <div style={{ fontSize: 9, color: "#6889a8", fontWeight: 600 }}>{d.count}</div>
-          <div style={{ width: "100%", background: color, borderRadius: 3, height: Math.max(4, (d.count / max) * (height - 18)), opacity: 0.15 + (0.85 * (i / (chartData.length - 1))), transition: "height .3s" }} />
-          <div style={{ fontSize: 8, color: "#6889a8" }}>{d.label}</div>
-        </div>
+    <svg viewBox={`0 0 ${w} ${h}`} style={{ width: "100%", height }}>
+      {showArea && <path d={areaPath} fill={color} opacity="0.08"/>}
+      <path d={linePath} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+      {points.map((p, i) => (
+        <g key={i}>
+          <circle cx={p.x} cy={p.y} r="4" fill="#fff" stroke={color} strokeWidth="2.5"/>
+          <text x={p.x} y={p.y - 8} textAnchor="middle" fontSize="9" fontWeight="700" fill={color}>{p.count}</text>
+          <text x={p.x} y={padding.top + plotH + 13} textAnchor="middle" fontSize="8" fill="#6889a8">{p.label}</text>
+        </g>
       ))}
-    </div>
+    </svg>
   );
 }
 
@@ -222,6 +235,102 @@ function ConfirmBtn({onConfirm,style:st}) {
   return <button onClick={()=>setC(true)} style={st||{background:"none",border:"none",cursor:"pointer",color:"#c0392b",padding:4}} title="Supprimer">{I.trash}</button>;
 }
 
+function LoginPage({data, onLogin}) {
+  const [role,setRole]=useState("");
+  const [regionId,setRegionId]=useState("");
+  const [localiteId,setLocaliteId]=useState("");
+  const [egliseId,setEgliseId]=useState("");
+
+  const selRegion=data.regions.find(r=>r.id===regionId);
+  const selLocalite=selRegion?.localites.find(l=>l.id===localiteId);
+
+  const roleLabels={national:"Missionnaire National",region:"Dirigeant de Région",localite:"Dirigeant de Localité",eglise:"Dirigeant d'Église de Maison"};
+
+  const canLogin=role==="national"||(role==="region"&&regionId)||(role==="localite"&&localiteId)||(role==="eglise"&&egliseId);
+
+  const handleLogin=()=>{
+    if(role==="national") onLogin({role:"national",id:null,regionId:null,localiteId:null,name:"Missionnaire National"});
+    else if(role==="region"&&selRegion) onLogin({role:"region",id:regionId,regionId,localiteId:null,name:selRegion.name});
+    else if(role==="localite"&&selLocalite) onLogin({role:"localite",id:localiteId,regionId,localiteId,name:selLocalite.name});
+    else if(role==="eglise"&&egliseId){
+      const egl=selLocalite?.eglises.find(e=>e.id===egliseId);
+      onLogin({role:"eglise",id:egliseId,regionId,localiteId,name:egl?.name||""});
+    }
+  };
+
+  const resetAfterRole=()=>{setRegionId("");setLocaliteId("");setEgliseId("");};
+
+  return(
+    <div style={{minHeight:"100vh",background:"linear-gradient(135deg,#0a2a4a 0%,#1a5a8a 50%,#0a2a4a 100%)",display:"flex",alignItems:"center",justifyContent:"center",padding:20,fontFamily:"'DM Sans',sans-serif"}}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap');`}</style>
+      <div style={{background:"#fff",borderRadius:20,padding:40,maxWidth:480,width:"100%",boxShadow:"0 30px 80px rgba(0,0,0,0.3)"}}>
+        <div style={{textAlign:"center",marginBottom:32}}>
+          <img src={LOGO_SRC} alt="CMCI" style={{width:72,height:72,borderRadius:16,objectFit:"cover",marginBottom:16}}/>
+          <h1 style={{margin:0,fontSize:24,color:"#0a2a4a",fontFamily:"'Playfair Display',serif"}}>CMCI Sénégal</h1>
+          <p style={{margin:"8px 0 0",fontSize:14,color:"#6889a8"}}>Plateforme de gestion des Églises</p>
+        </div>
+
+        <div style={{marginBottom:20}}>
+          <label style={lblS}>Votre fonction</label>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+            {["national","region","localite","eglise"].map(r=>(
+              <button key={r} onClick={()=>{setRole(r);resetAfterRole();}} style={{
+                padding:"14px 12px",borderRadius:12,border:`2px solid ${role===r?"#1a6cb5":"#d4e4f4"}`,
+                background:role===r?"#edf4fb":"#fff",color:role===r?"#1a6cb5":"#2a4a6a",
+                cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:"'DM Sans',sans-serif",
+                transition:"all .15s",textAlign:"center",lineHeight:1.3,
+              }}>
+                {r==="national"?"🌍":r==="region"?"📍":r==="localite"?"🏘️":"🏠"}<br/>
+                {roleLabels[r]}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Step 1: Region (for region, localite, eglise roles) */}
+        {role&&role!=="national"&&(
+          <div style={{marginBottom:16}}>
+            <label style={lblS}>Votre Région</label>
+            <select style={inpS} value={regionId} onChange={e=>{setRegionId(e.target.value);setLocaliteId("");setEgliseId("");}}>
+              <option value="">— Choisir votre région —</option>
+              {data.regions.map(r=>(<option key={r.id} value={r.id}>{r.name}</option>))}
+            </select>
+          </div>
+        )}
+
+        {/* Step 2: Localite (for localite and eglise roles) */}
+        {(role==="localite"||role==="eglise")&&regionId&&selRegion&&(
+          <div style={{marginBottom:16}}>
+            <label style={lblS}>Votre Localité</label>
+            <select style={inpS} value={localiteId} onChange={e=>{setLocaliteId(e.target.value);setEgliseId("");}}>
+              <option value="">— Choisir votre localité —</option>
+              {selRegion.localites.map(l=>(<option key={l.id} value={l.id}>{l.name} — Dir: {l.leader}</option>))}
+            </select>
+          </div>
+        )}
+
+        {/* Step 3: Eglise (for eglise role only) */}
+        {role==="eglise"&&localiteId&&selLocalite&&(
+          <div style={{marginBottom:16}}>
+            <label style={lblS}>Votre Église de Maison</label>
+            <select style={inpS} value={egliseId} onChange={e=>setEgliseId(e.target.value)}>
+              <option value="">— Choisir votre église —</option>
+              {selLocalite.eglises.map(e=>(<option key={e.id} value={e.id}>{e.name} — Dir: {e.leader}</option>))}
+            </select>
+          </div>
+        )}
+
+        <button onClick={handleLogin} disabled={!canLogin}
+          style={{...btnP,width:"100%",justifyContent:"center",padding:"14px 24px",fontSize:16,marginTop:8,
+            opacity:canLogin?1:0.5, cursor:canLogin?"pointer":"not-allowed",
+          }}>
+          Connexion
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function CMCIApp() {
   const [data,setData]=useState(defaultData);
   const [view,setView]=useState("dashboard");
@@ -229,36 +338,77 @@ export default function CMCIApp() {
   const [modal,setModal]=useState(null);
   const [sidebarOpen,setSidebarOpen]=useState(false);
 
+  // Auth system
+  const [user,setUser]=useState(null); // {role, id, name}
+  // Roles: "national","region","localite","eglise"
+
   const nav=useCallback((v,o={})=>{setView(v);setSel(o);setSidebarOpen(false);},[]);
   const upd=useCallback(fn=>{setData(p=>{const n=JSON.parse(JSON.stringify(p));fn(n);return n;});},[]);
 
   const allE=useMemo(()=>getAllEglises(data),[data]);
   const allM=useMemo(()=>getAllMembers(data),[data]);
 
-  const gTR=useMemo(()=>{if(!allM.length)return 0;let s=0;allM.forEach(m=>{s+=getTitheStats(data,m.id,m.egliseId).pct;});return Math.round(s/allM.length);},[data,allM]);
+  const gTR=useMemo(()=>{if(!visibleMembers.length)return 0;let s=0;visibleMembers.forEach(m=>{s+=getTitheStats(filteredData,m.id,m.egliseId).pct;});return Math.round(s/visibleMembers.length);},[filteredData,visibleMembers]);
 
-  const navItems=[
-    {id:"dashboard",label:"Tableau de Bord",icon:I.dash},
-    {id:"regions",label:"Régions",icon:I.region},
-    {id:"localites",label:"Localités",icon:I.localite},
-    {id:"eglises",label:"Églises de Maison",icon:I.church},
-    {id:"tithe",label:"Suivi des Dîmes",icon:I.tithe},
-    {id:"reports",label:"Rapports",icon:I.report},
-    {id:"lessons",label:"Leçons Bertoua",icon:I.lesson},
-    {id:"progress",label:"Progression",icon:I.progress},
-  ];
+  // Filtered data based on role - deep filtering
+  const filteredData=useMemo(()=>{
+    if(!user||user.role==="national") return data;
+    const d=JSON.parse(JSON.stringify(data));
+    if(user.role==="region"){
+      d.regions=d.regions.filter(r=>r.id===user.regionId);
+    } else if(user.role==="localite"){
+      d.regions=d.regions.filter(r=>r.id===user.regionId).map(r=>({...r,localites:r.localites.filter(l=>l.id===user.localiteId)}));
+    } else if(user.role==="eglise"){
+      d.regions=d.regions.filter(r=>r.id===user.regionId).map(r=>({...r,
+        localites:r.localites.filter(l=>l.id===user.localiteId).map(l=>({...l,
+          eglises:l.eglises.filter(e=>e.id===user.id)
+        }))
+      }));
+    }
+    // Filter reports to only visible eglises
+    const eIds=new Set();
+    d.regions.forEach(r=>r.localites.forEach(l=>l.eglises.forEach(e=>eIds.add(e.id))));
+    d.reports=d.reports.filter(rp=>eIds.has(rp.egliseId));
+    // Filter grades to only visible members
+    const mIds=new Set();
+    d.regions.forEach(r=>r.localites.forEach(l=>l.eglises.forEach(e=>e.members.forEach(m=>mIds.add(m.id)))));
+    d.grades=d.grades.filter(g=>mIds.has(g.memberId));
+    return d;
+  },[data,user]);
+
+  const visibleEglises=useMemo(()=>getAllEglises(filteredData),[filteredData]);
+  const visibleMembers=useMemo(()=>getAllMembers(filteredData),[filteredData]);
+
+  const navItems=useMemo(()=>{
+    const r=user?.role||"national";
+    const items=[];
+    if(r==="national") items.push({id:"dashboard",label:"Tableau de Bord",icon:I.dash});
+    if(r==="national"||r==="region") items.push({id:"regions",label:"Régions",icon:I.region});
+    if(r==="national"||r==="region"||r==="localite") items.push({id:"localites",label:"Localités",icon:I.localite});
+    items.push({id:"eglises",label:"Églises de Maison",icon:I.church});
+    items.push({id:"tithe",label:"Suivi des Dîmes",icon:I.tithe});
+    items.push({id:"reports",label:"Rapports",icon:I.report});
+    items.push({id:"lessons",label:"Leçons Bertoua",icon:I.lesson});
+    items.push({id:"progress",label:"Progression",icon:I.progress});
+    return items;
+  },[user]);
+
+  // Login page
+  if(!user) return <LoginPage data={data} onLogin={setUser}/>;
+
+  // Default view based on role
 
   // ── Dashboard ──
   function PgDash(){
-    const totalLoc = data.regions.reduce((s,r)=>s+r.localites.length,0);
+    const totalLoc = filteredData.regions.reduce((s,r)=>s+r.localites.length,0);
     const leaders = new Set();
-    data.regions.forEach(r=>{leaders.add(r.leader);r.localites.forEach(l=>{leaders.add(l.leader);l.eglises.forEach(e=>leaders.add(e.leader));});});
+    filteredData.regions.forEach(r=>{leaders.add(r.leader);r.localites.forEach(l=>{leaders.add(l.leader);l.eglises.forEach(e=>leaders.add(e.leader));});});
     const totalLeaders = leaders.size;
 
     // Evolution data
-    const evoEglises = getEvolutionByMonth(allE, "createdDate", 6);
-    const evoMembers = getEvolutionByMonth(allM, "joinDate", 6);
-    const allLocs = []; data.regions.forEach(r=>r.localites.forEach(l=>allLocs.push(l)));
+    const evoEglises = getEvolutionByMonth(visibleEglises, "createdDate", 6);
+    const evoMembers = getEvolutionByMonth(visibleMembers, "joinDate", 6);
+    const allLocs = []; filteredData.regions.forEach(r=>r.localites.forEach(l=>allLocs.push(l)));
     const evoLoc = getEvolutionByMonth(allLocs, "createdDate", 6);
 
     // Previous month for comparison
@@ -276,15 +426,15 @@ export default function CMCIApp() {
 
       {/* Présence nationale */}
       <div style={{...cardS,marginBottom:20,display:"flex",alignItems:"center",gap:24,flexWrap:"wrap"}}>
-        <ProgressRing value={data.regions.length} max={TOTAL_REGIONS_SENEGAL} color="#1a6cb5" size={90} label="Régions couvertes"/>
+        <ProgressRing value={filteredData.regions.length} max={TOTAL_REGIONS_SENEGAL} color="#1a6cb5" size={90} label="Régions couvertes"/>
         <div style={{flex:1,minWidth:200}}>
           <h3 style={{margin:0,fontSize:16,color:"#0a2a4a",fontFamily:"'Playfair Display',serif"}}>Présence nationale</h3>
           <p style={{margin:"6px 0 0",fontSize:13,color:"#6889a8"}}>
-            La CMCI est présente dans <strong style={{color:"#1a6cb5"}}>{data.regions.length}</strong> des <strong>{TOTAL_REGIONS_SENEGAL}</strong> régions du Sénégal
-            ({Math.round((data.regions.length/TOTAL_REGIONS_SENEGAL)*100)}% du territoire)
+            La CMCI est présente dans <strong style={{color:"#1a6cb5"}}>{filteredData.regions.length}</strong> des <strong>{TOTAL_REGIONS_SENEGAL}</strong> régions du Sénégal
+            ({Math.round((filteredData.regions.length/TOTAL_REGIONS_SENEGAL)*100)}% du territoire)
           </p>
           <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:10}}>
-            {data.regions.map(r=>(<Badge key={r.id} bg="#edf4fb" color="#1a6cb5">{r.name.replace("Région ","")}</Badge>))}
+            {filteredData.regions.map(r=>(<Badge key={r.id} bg="#edf4fb" color="#1a6cb5">{r.name.replace("Région ","")}</Badge>))}
           </div>
         </div>
       </div>
@@ -297,13 +447,13 @@ export default function CMCIApp() {
             <div>
               <div style={{fontSize:12,color:"#6889a8",fontWeight:500}}>Membres</div>
               <div style={{display:"flex",alignItems:"center",gap:8}}>
-                <span style={{fontSize:28,fontWeight:700,color:"#0a2a4a",fontFamily:"'Playfair Display',serif"}}>{allM.length}</span>
-                <EvolutionBadge current={allM.length} previous={prevMembers}/>
+                <span style={{fontSize:28,fontWeight:700,color:"#0a2a4a",fontFamily:"'Playfair Display',serif"}}>{visibleMembers.length}</span>
+                <EvolutionBadge current={visibleMembers.length} previous={prevMembers}/>
               </div>
             </div>
             <div style={{color:"#5b7fa5"}}>{I.members}</div>
           </div>
-          <MiniChart data={evoMembers} color="#5b7fa5"/>
+          <LineChart data={evoMembers} color="#5b7fa5"/>
         </div>
 
         {/* Églises de Maison */}
@@ -312,13 +462,13 @@ export default function CMCIApp() {
             <div>
               <div style={{fontSize:12,color:"#6889a8",fontWeight:500}}>Églises de Maison</div>
               <div style={{display:"flex",alignItems:"center",gap:8}}>
-                <span style={{fontSize:28,fontWeight:700,color:"#0a2a4a",fontFamily:"'Playfair Display',serif"}}>{allE.length}</span>
-                <EvolutionBadge current={allE.length} previous={prevEglises}/>
+                <span style={{fontSize:28,fontWeight:700,color:"#0a2a4a",fontFamily:"'Playfair Display',serif"}}>{visibleEglises.length}</span>
+                <EvolutionBadge current={visibleEglises.length} previous={prevEglises}/>
               </div>
             </div>
             <div style={{color:"#6b8f71"}}>{I.church}</div>
           </div>
-          <MiniChart data={evoEglises} color="#6b8f71"/>
+          <LineChart data={evoEglises} color="#6b8f71"/>
         </div>
 
         {/* Localités */}
@@ -333,7 +483,7 @@ export default function CMCIApp() {
             </div>
             <div style={{color:"#3b9bd9"}}>{I.localite}</div>
           </div>
-          <MiniChart data={evoLoc} color="#3b9bd9"/>
+          <LineChart data={evoLoc} color="#3b9bd9"/>
         </div>
 
         {/* Dirigeants */}
@@ -346,7 +496,7 @@ export default function CMCIApp() {
             <div style={{color:"#2a7bc0"}}>{I.members}</div>
           </div>
           <div style={{fontSize:12,color:"#6889a8",marginTop:8}}>
-            {data.regions.length} de régions · {totalLoc} de localités · {allE.length} d'églises
+            {filteredData.regions.length} de régions · {totalLoc} de localités · {visibleEglises.length} d'églises
           </div>
         </div>
       </div>
@@ -360,15 +510,15 @@ export default function CMCIApp() {
         </div>
         <div style={cardS}>
           <div style={{fontSize:12,color:"#6889a8",fontWeight:500,marginBottom:4}}>Rapports soumis</div>
-          <div style={{fontSize:28,fontWeight:700,color:"#0a2a4a",fontFamily:"'Playfair Display',serif"}}>{data.reports.length}</div>
-          <div style={{fontSize:12,color:"#6889a8",marginTop:8}}>{data.reports.filter(r=>r.day==="Dimanche").length} dimanches · {data.reports.filter(r=>r.day==="Jeudi").length} jeudis</div>
+          <div style={{fontSize:28,fontWeight:700,color:"#0a2a4a",fontFamily:"'Playfair Display',serif"}}>{filteredData.reports.length}</div>
+          <div style={{fontSize:12,color:"#6889a8",marginTop:8}}>{filteredData.reports.filter(r=>r.day==="Dimanche").length} dimanches · {filteredData.reports.filter(r=>r.day==="Jeudi").length} jeudis</div>
         </div>
       </div>
 
       {/* Répartition par région */}
       <h3 style={{fontSize:18,color:"#0a2a4a",marginBottom:16,fontFamily:"'Playfair Display',serif"}}>Répartition par Région</h3>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:12,marginBottom:28}}>
-        {data.regions.map(r=>{
+        {filteredData.regions.map(r=>{
           const rLoc=r.localites.length;
           const rEgl=r.localites.reduce((s,l)=>s+l.eglises.length,0);
           const rMem=r.localites.reduce((s,l)=>s+l.eglises.reduce((s2,e)=>s2+e.members.length,0),0);
@@ -390,7 +540,7 @@ export default function CMCIApp() {
       {/* Derniers rapports */}
       <h3 style={{fontSize:18,color:"#0a2a4a",marginBottom:16,fontFamily:"'Playfair Display',serif"}}>Derniers Rapports</h3>
       <div style={{display:"flex",flexDirection:"column",gap:10}}>
-        {data.reports.sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5).map(rp=>{const info=findEglise(data,rp.egliseId);return(
+        {filteredData.reports.sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5).map(rp=>{const info=findEglise(data,rp.egliseId);return(
           <div key={rp.id} style={{background:"#fff",borderRadius:12,padding:16,border:"1px solid #d4e4f4",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
             <div><div style={{fontWeight:600,color:"#0a2a4a",fontSize:14}}>{info.eglise?.name||"—"}</div><div style={{fontSize:13,color:"#6889a8",marginTop:4}}>{rp.day} — {rp.date}</div></div>
             <div style={{display:"flex",gap:16,fontSize:13}}>
@@ -413,7 +563,7 @@ export default function CMCIApp() {
         <button style={btnP} onClick={()=>setModal("addRegion")}>{I.plus} Nouvelle Région</button>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:16}}>
-        {data.regions.map(r=>(<div key={r.id} onClick={()=>nav("regions",{region:r.id})} style={{background:"#fff",borderRadius:14,padding:20,cursor:"pointer",border:"1px solid #d4e4f4",transition:"transform .15s,box-shadow .15s"}} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 8px 24px rgba(0,0,0,0.08)";}} onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="";}}>
+        {filteredData.regions.map(r=>(<div key={r.id} onClick={()=>nav("regions",{region:r.id})} style={{background:"#fff",borderRadius:14,padding:20,cursor:"pointer",border:"1px solid #d4e4f4",transition:"transform .15s,box-shadow .15s"}} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 8px 24px rgba(0,0,0,0.08)";}} onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="";}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"start"}}>
             <div><h3 style={{margin:0,fontSize:17,color:"#0a2a4a",fontFamily:"'Playfair Display',serif"}}>{r.name}</h3><p style={{margin:"6px 0 0",fontSize:13,color:"#6889a8"}}>Dirigeant: {r.leader}</p></div>
             <span style={{color:"#3b9bd9"}}>{I.chev}</span>
@@ -426,7 +576,7 @@ export default function CMCIApp() {
   }
 
   function PgRegionDet(){
-    const region=data.regions.find(r=>r.id===sel.region); if(!region) return null;
+    const region=filteredData.regions.find(r=>r.id===sel.region); if(!region) return null;
     const rMem=[]; region.localites.forEach(l=>l.eglises.forEach(e=>e.members.forEach(m=>rMem.push(m))));
     const rEgl=[]; region.localites.forEach(l=>l.eglises.forEach(e=>rEgl.push(e)));
     const evoM=getEvolutionByMonth(rMem,"joinDate",6);
@@ -444,8 +594,8 @@ export default function CMCIApp() {
           <div style={{padding:"10px 16px",background:"#edf4fb",borderRadius:10,textAlign:"center"}}><div style={{fontSize:22,fontWeight:700,color:"#0a2a4a",fontFamily:"'Playfair Display',serif"}}>{rMem.length}</div><div style={{fontSize:11,color:"#6889a8"}}>Membres</div></div>
         </div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginTop:16}}>
-          <div><div style={{fontSize:11,color:"#6889a8",marginBottom:4}}>Évolution membres</div><MiniChart data={evoM} color="#5b7fa5" height={40}/></div>
-          <div><div style={{fontSize:11,color:"#6889a8",marginBottom:4}}>Évolution églises</div><MiniChart data={evoE} color="#6b8f71" height={40}/></div>
+          <div><div style={{fontSize:11,color:"#6889a8",marginBottom:4}}>Évolution membres</div><LineChart data={evoM} color="#5b7fa5" height={65}/></div>
+          <div><div style={{fontSize:11,color:"#6889a8",marginBottom:4}}>Évolution églises</div><LineChart data={evoE} color="#6b8f71" height={65}/></div>
         </div>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:16}}>
@@ -459,7 +609,7 @@ export default function CMCIApp() {
   }
 
   function PgLocalite(){
-    const region=data.regions.find(r=>r.id===sel.region); const loc=region?.localites.find(l=>l.id===sel.localite); if(!loc) return null;
+    const region=filteredData.regions.find(r=>r.id===sel.region); const loc=region?.localites.find(l=>l.id===sel.localite); if(!loc) return null;
     const lMem=[]; loc.eglises.forEach(e=>e.members.forEach(m=>lMem.push(m)));
     const evoM=getEvolutionByMonth(lMem,"joinDate",6);
     const evoE=getEvolutionByMonth(loc.eglises,"createdDate",6);
@@ -475,8 +625,8 @@ export default function CMCIApp() {
           <div style={{padding:"10px 16px",background:"#edf4fb",borderRadius:10,textAlign:"center"}}><div style={{fontSize:22,fontWeight:700,color:"#0a2a4a",fontFamily:"'Playfair Display',serif"}}>{lMem.length}</div><div style={{fontSize:11,color:"#6889a8"}}>Membres</div></div>
         </div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginTop:16}}>
-          <div><div style={{fontSize:11,color:"#6889a8",marginBottom:4}}>Évolution membres</div><MiniChart data={evoM} color="#5b7fa5" height={40}/></div>
-          <div><div style={{fontSize:11,color:"#6889a8",marginBottom:4}}>Évolution églises</div><MiniChart data={evoE} color="#6b8f71" height={40}/></div>
+          <div><div style={{fontSize:11,color:"#6889a8",marginBottom:4}}>Évolution membres</div><LineChart data={evoM} color="#5b7fa5" height={65}/></div>
+          <div><div style={{fontSize:11,color:"#6889a8",marginBottom:4}}>Évolution églises</div><LineChart data={evoE} color="#6b8f71" height={65}/></div>
         </div>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:16}}>
@@ -497,7 +647,7 @@ export default function CMCIApp() {
   function PgEgliseDet(){
     const info=findEglise(data,sel.eglise); if(!info.eglise) return null;
     const {eglise,localite,region}=info;
-    const reps=data.reports.filter(r=>r.egliseId===eglise.id).sort((a,b)=>b.date.localeCompare(a.date));
+    const reps=filteredData.reports.filter(r=>r.egliseId===eglise.id).sort((a,b)=>b.date.localeCompare(a.date));
     const evoMem=getEvolutionByMonth(eglise.members,"joinDate",6);
     const prevMem=evoMem.length>=2?evoMem[evoMem.length-2].count:0;
     return(<div>
@@ -513,7 +663,7 @@ export default function CMCIApp() {
             </div>
             <div style={{fontSize:11,color:"#6889a8"}}>Membres</div>
           </div>
-          <div style={{flex:1,minWidth:150,maxWidth:300}}><MiniChart data={evoMem} color="#5b7fa5" height={40}/></div>
+          <div style={{flex:1,minWidth:150,maxWidth:300}}><LineChart data={evoMem} color="#5b7fa5" height={65}/></div>
         </div>
       </div>
 
@@ -524,7 +674,7 @@ export default function CMCIApp() {
       <div style={{background:"#fff",borderRadius:14,border:"1px solid #d4e4f4",overflow:"hidden",marginBottom:32}}>
         <div style={{overflowX:"auto"}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:14}}>
           <thead><tr style={{background:"#f0f5fb"}}>{["Nom","Téléphone","Rôle","Dîme","Actions"].map(h=>(<th key={h} style={{padding:"12px 16px",textAlign:"left",color:"#2a4a6a",fontWeight:600,fontSize:12,textTransform:"uppercase",letterSpacing:.5}}>{h}</th>))}</tr></thead>
-          <tbody>{eglise.members.map(m=>{const ts=getTitheStats(data,m.id,eglise.id);return(
+          <tbody>{eglise.members.map(m=>{const ts=getTitheStats(filteredData,m.id,eglise.id);return(
             <tr key={m.id} style={{borderTop:"1px solid #e0ecf6"}}>
               <td style={{padding:"12px 16px",fontWeight:500,color:"#0a2a4a"}}>{m.name}</td>
               <td style={{padding:"12px 16px",color:"#6889a8"}}>{m.phone}</td>
@@ -570,7 +720,7 @@ export default function CMCIApp() {
   // ── All Localites ──
   function PgAllLocalites(){
     const allLocs=[];
-    data.regions.forEach(r=>r.localites.forEach(l=>allLocs.push({...l,regionName:r.name,regionId:r.id,egliseCount:l.eglises.length,memberCount:l.eglises.reduce((s,e)=>s+e.members.length,0)})));
+    filteredData.regions.forEach(r=>r.localites.forEach(l=>allLocs.push({...l,regionName:r.name,regionId:r.id,egliseCount:l.eglises.length,memberCount:l.eglises.reduce((s,e)=>s+e.members.length,0)})));
 
     return(<div>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24,flexWrap:"wrap",gap:12}}>
@@ -615,7 +765,7 @@ export default function CMCIApp() {
           <label style={lblS}>Région</label>
           <select style={inpS} value={rId} onChange={e=>sRId(e.target.value)}>
             <option value="">— Choisir une région —</option>
-            {data.regions.map(r=>(<option key={r.id} value={r.id}>{r.name}</option>))}
+            {filteredData.regions.map(r=>(<option key={r.id} value={r.id}>{r.name}</option>))}
           </select>
         </div>
         {rId&&<>
@@ -636,10 +786,10 @@ export default function CMCIApp() {
     if(sel.eglise) return <PgEgliseDet/>;
     return(<div>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24,flexWrap:"wrap",gap:12}}>
-        <h2 style={{margin:0,fontSize:24,color:"#0a2a4a",fontFamily:"'Playfair Display',serif"}}>Églises de Maison ({allE.length})</h2>
+        <h2 style={{margin:0,fontSize:24,color:"#0a2a4a",fontFamily:"'Playfair Display',serif"}}>Églises de Maison ({visibleEglises.length})</h2>
         <button style={btnP} onClick={()=>setModal("addEgliseGlobal")}>{I.plus} Nouvelle Église</button>
       </div>
-      {data.regions.map(r=>{
+      {filteredData.regions.map(r=>{
         const rMem=r.localites.reduce((s,l)=>s+l.eglises.reduce((s2,e)=>s2+e.members.length,0),0);
         const rEgl=r.localites.reduce((s,l)=>s+l.eglises.length,0);
         return(<div key={r.id} style={{marginBottom:28}}>
@@ -669,7 +819,7 @@ export default function CMCIApp() {
                       </div>
                       <ConfirmBtn onConfirm={()=>upd(d=>{for(const rx of d.regions)for(const lx of rx.localites)lx.eglises=lx.eglises.filter(x=>x.id!==e.id);d.reports=d.reports.filter(rx=>rx.egliseId!==e.id);})}/>
                     </div>
-                    <div style={{marginTop:10}}><MiniChart data={evoM} color="#5b7fa5" height={35}/></div>
+                    <div style={{marginTop:10}}><LineChart data={evoM} color="#5b7fa5" height={60}/></div>
                   </div>);
                 })}
               </div>
@@ -688,14 +838,14 @@ export default function CMCIApp() {
       <h2 style={{margin:"0 0 8px",fontSize:24,color:"#0a2a4a",fontFamily:"'Playfair Display',serif"}}>Suivi des Dîmes</h2>
       <p style={{color:"#6889a8",margin:"0 0 24px",fontSize:14}}>Régularité du paiement de la dîme par église de maison</p>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))",gap:16}}>
-        {allE.map(e=>{const reps=data.reports.filter(r=>r.egliseId===e.id);return(
+        {visibleEglises.map(e=>{const reps=filteredData.reports.filter(r=>r.egliseId===e.id);return(
           <div key={e.id} onClick={()=>nav("tithe",{eglise:e.id})} style={{background:"#fff",borderRadius:14,padding:20,border:"1px solid #d4e4f4",cursor:"pointer",transition:"transform .15s"}} onMouseEnter={ev=>{ev.currentTarget.style.transform="translateY(-2px)";}} onMouseLeave={ev=>{ev.currentTarget.style.transform="";}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"start",marginBottom:12}}>
               <div><h3 style={{margin:0,fontSize:15,color:"#0a2a4a"}}>{e.name}</h3><p style={{margin:"4px 0 0",fontSize:12,color:"#3b9bd9"}}>{e.regionName} → {e.localiteName}</p></div>
               <span style={{color:"#3b9bd9"}}>{I.chev}</span>
             </div>
             <div style={{display:"flex",flexDirection:"column",gap:6}}>
-              {e.members.map(m=>{const ts=getTitheStats(data,m.id,e.id);return(<div key={m.id} style={{display:"flex",alignItems:"center",gap:10,fontSize:13}}>
+              {e.members.map(m=>{const ts=getTitheStats(filteredData,m.id,e.id);return(<div key={m.id} style={{display:"flex",alignItems:"center",gap:10,fontSize:13}}>
                 <span style={{width:100,color:"#2a4a6a",fontWeight:500,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{m.name}</span>
                 <div style={{flex:1}}><TitheBar pct={ts.pct}/></div>
               </div>);})}
@@ -710,7 +860,7 @@ export default function CMCIApp() {
   function PgTitheEgl(){
     const info=findEglise(data,sel.eglise); if(!info.eglise) return null;
     const {eglise,localite,region}=info;
-    const reps=data.reports.filter(r=>r.egliseId===eglise.id).sort((a,b)=>b.date.localeCompare(a.date));
+    const reps=filteredData.reports.filter(r=>r.egliseId===eglise.id).sort((a,b)=>b.date.localeCompare(a.date));
     return(<div>
       <button onClick={()=>nav("tithe")} style={{...btnS,marginBottom:20,padding:"8px 16px"}}>{I.back} Retour</button>
       <div style={{background:"#fff",borderRadius:16,padding:24,border:"1px solid #d4e4f4",marginBottom:24}}>
@@ -721,7 +871,7 @@ export default function CMCIApp() {
       <h3 style={{margin:"0 0 16px",fontSize:18,color:"#0a2a4a",fontFamily:"'Playfair Display',serif"}}>Régularité par Membre</h3>
       <div style={{background:"#fff",borderRadius:14,border:"1px solid #d4e4f4",overflow:"hidden",marginBottom:32}}><div style={{overflowX:"auto"}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:14}}>
         <thead><tr style={{background:"#f0f5fb"}}>{["Membre","Présences","Dîmes payées","Régularité","Statut"].map(h=>(<th key={h} style={{padding:"12px 16px",textAlign:"left",color:"#2a4a6a",fontWeight:600,fontSize:12,textTransform:"uppercase"}}>{h}</th>))}</tr></thead>
-        <tbody>{eglise.members.map(m=>{const ts=getTitheStats(data,m.id,eglise.id);const st=ts.pct>=80?"Fidèle":ts.pct>=50?"Irrégulier":"À encourager";const sc=ts.pct>=80?"#2d6a2d":ts.pct>=50?"#856d12":"#922b21";const sb=ts.pct>=80?"#e8f0e8":ts.pct>=50?"#fef9e7":"#fde8e8";return(
+        <tbody>{eglise.members.map(m=>{const ts=getTitheStats(filteredData,m.id,eglise.id);const st=ts.pct>=80?"Fidèle":ts.pct>=50?"Irrégulier":"À encourager";const sc=ts.pct>=80?"#2d6a2d":ts.pct>=50?"#856d12":"#922b21";const sb=ts.pct>=80?"#e8f0e8":ts.pct>=50?"#fef9e7":"#fde8e8";return(
           <tr key={m.id} style={{borderTop:"1px solid #e0ecf6"}}>
             <td style={{padding:"12px 16px",fontWeight:500,color:"#0a2a4a"}}>{m.name}</td>
             <td style={{padding:"12px 16px",color:"#2a4a6a"}}>{ts.total}</td>
@@ -756,12 +906,12 @@ export default function CMCIApp() {
     const [fEglise,sFEglise]=useState("");
     const [fDay,sFDay]=useState("");
 
-    const filteredRegion=data.regions.find(r=>r.id===fRegion);
+    const filteredRegion=filteredData.regions.find(r=>r.id===fRegion);
     const filteredLocs=filteredRegion?filteredRegion.localites:[];
     const filteredLoc=filteredLocs.find(l=>l.id===fLocalite);
-    const filteredEgl=filteredLoc?filteredLoc.eglises:fRegion?filteredLocs.flatMap(l=>l.eglises):allE;
+    const filteredEgl=filteredLoc?filteredLoc.eglises:fRegion?filteredLocs.flatMap(l=>l.eglises):visibleEglises;
 
-    const filtered=data.reports.filter(rp=>{
+    const filtered=filteredData.reports.filter(rp=>{
       if(fDateFrom&&rp.date<fDateFrom) return false;
       if(fDateTo&&rp.date>fDateTo) return false;
       if(fDay&&rp.day!==fDay) return false;
@@ -798,7 +948,7 @@ export default function CMCIApp() {
           <div><label style={{...lblS,fontSize:11}}>Région</label>
             <select style={selS} value={fRegion} onChange={e=>{sFRegion(e.target.value);sFLocalite("");sFEglise("");}}>
               <option value="">Toutes</option>
-              {data.regions.map(r=>(<option key={r.id} value={r.id}>{r.name}</option>))}
+              {filteredData.regions.map(r=>(<option key={r.id} value={r.id}>{r.name}</option>))}
             </select>
           </div>
           {fRegion&&<div><label style={{...lblS,fontSize:11}}>Localité</label>
@@ -859,7 +1009,7 @@ export default function CMCIApp() {
         <button style={btnP} onClick={()=>setModal("addLesson")}>{I.plus} Nouvelle Leçon</button>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:16}}>
-        {data.lessons.map(ls=>{const gl=data.grades.filter(g=>g.lessonId===ls.id);const avg=gl.length>0?(gl.reduce((s,g)=>s+g.score,0)/gl.length).toFixed(1):"—";return(
+        {filteredData.lessons.map(ls=>{const gl=filteredData.grades.filter(g=>g.lessonId===ls.id);const avg=gl.length>0?(gl.reduce((s,g)=>s+g.score,0)/gl.length).toFixed(1):"—";return(
           <div key={ls.id} style={{background:"#fff",borderRadius:14,padding:20,border:"1px solid #d4e4f4",position:"relative"}}>
             <div style={{position:"absolute",top:16,right:16,width:36,height:36,borderRadius:"50%",background:"#edf4fb",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:"#1a6cb5",fontFamily:"'Playfair Display',serif"}}>{ls.number}</div>
             <h3 style={{margin:0,fontSize:16,color:"#0a2a4a",fontFamily:"'Playfair Display',serif",paddingRight:44}}>{ls.title}</h3>
@@ -880,14 +1030,14 @@ export default function CMCIApp() {
         <thead><tr style={{background:"#f0f5fb"}}>
           <th style={{padding:"12px 16px",textAlign:"left",color:"#2a4a6a",fontWeight:600,fontSize:12,textTransform:"uppercase"}}>Membre</th>
           <th style={{padding:"12px 16px",textAlign:"left",color:"#2a4a6a",fontWeight:600,fontSize:12,textTransform:"uppercase"}}>Église</th>
-          {data.lessons.map(ls=>(<th key={ls.id} style={{padding:"12px 8px",textAlign:"center",color:"#2a4a6a",fontWeight:600,fontSize:11,textTransform:"uppercase",minWidth:50}}>L{ls.number}</th>))}
+          {filteredData.lessons.map(ls=>(<th key={ls.id} style={{padding:"12px 8px",textAlign:"center",color:"#2a4a6a",fontWeight:600,fontSize:11,textTransform:"uppercase",minWidth:50}}>L{ls.number}</th>))}
           <th style={{padding:"12px 16px",textAlign:"center",color:"#2a4a6a",fontWeight:600,fontSize:12,textTransform:"uppercase"}}>Moy</th>
         </tr></thead>
-        <tbody>{allM.map(m=>{const mg=data.grades.filter(g=>g.memberId===m.id);const avg=mg.length>0?(mg.reduce((s,g)=>s+g.score,0)/mg.length).toFixed(1):"—";return(
+        <tbody>{visibleMembers.map(m=>{const mg=filteredData.grades.filter(g=>g.memberId===m.id);const avg=mg.length>0?(mg.reduce((s,g)=>s+g.score,0)/mg.length).toFixed(1):"—";return(
           <tr key={m.id} style={{borderTop:"1px solid #e0ecf6",cursor:"pointer"}} onClick={()=>nav("progress",{member:m.id})} onMouseEnter={e=>e.currentTarget.style.background="#f5f8fc"} onMouseLeave={e=>e.currentTarget.style.background=""}>
             <td style={{padding:"12px 16px",fontWeight:500,color:"#0a2a4a"}}>{m.name}</td>
             <td style={{padding:"12px 16px",fontSize:13,color:"#6889a8"}}>{m.egliseName}</td>
-            {data.lessons.map(ls=>{const gr=data.grades.find(g=>g.memberId===m.id&&g.lessonId===ls.id);return(<td key={ls.id} style={{padding:"8px",textAlign:"center"}}>
+            {filteredData.lessons.map(ls=>{const gr=filteredData.grades.find(g=>g.memberId===m.id&&g.lessonId===ls.id);return(<td key={ls.id} style={{padding:"8px",textAlign:"center"}}>
               {gr?<span style={{display:"inline-block",width:32,height:32,lineHeight:"32px",borderRadius:8,fontSize:12,fontWeight:700,background:gr.score>=16?"#e8f0e8":gr.score>=12?"#fef9e7":"#fde8e8",color:gr.score>=16?"#2d6a2d":gr.score>=12?"#856d12":"#922b21"}}>{gr.score}</span>:<span style={{color:"#b8d0e8",fontSize:18}}>·</span>}
             </td>);})}
             <td style={{padding:"12px 16px",textAlign:"center",fontWeight:700,color:"#0a2a4a"}}>{avg}</td>
@@ -897,17 +1047,17 @@ export default function CMCIApp() {
   }
 
   function PgMemberProg(){
-    const member=allM.find(m=>m.id===sel.member); if(!member) return null;
-    const mg=data.grades.filter(g=>g.memberId===member.id);
+    const member=visibleMembers.find(m=>m.id===sel.member); if(!member) return null;
+    const mg=filteredData.grades.filter(g=>g.memberId===member.id);
     const avg=mg.length>0?(mg.reduce((s,g)=>s+g.score,0)/mg.length).toFixed(1):"—";
-    const ts=getTitheStats(data,member.id,member.egliseId);
+    const ts=getTitheStats(filteredData,member.id,member.egliseId);
     return(<div>
       <button onClick={()=>{if(sel.eglise) nav("eglise-detail",{eglise:sel.eglise}); else nav("progress");}} style={{...btnS,marginBottom:20,padding:"8px 16px"}}>{I.back} Retour</button>
       <div style={{background:"#fff",borderRadius:16,padding:24,border:"1px solid #d4e4f4",marginBottom:24}}>
         <h2 style={{margin:0,fontSize:22,color:"#0a2a4a",fontFamily:"'Playfair Display',serif"}}>{member.name}</h2>
         <p style={{margin:"8px 0 0",fontSize:14,color:"#6889a8"}}>{member.egliseName} — {member.role}</p>
         <div style={{display:"flex",gap:16,marginTop:16,flexWrap:"wrap"}}>
-          <div style={{padding:"12px 20px",background:"#edf4fb",borderRadius:12,textAlign:"center"}}><div style={{fontSize:24,fontWeight:700,color:"#1a6cb5",fontFamily:"'Playfair Display',serif"}}>{mg.length}/{data.lessons.length}</div><div style={{fontSize:12,color:"#6889a8",marginTop:4}}>Leçons</div></div>
+          <div style={{padding:"12px 20px",background:"#edf4fb",borderRadius:12,textAlign:"center"}}><div style={{fontSize:24,fontWeight:700,color:"#1a6cb5",fontFamily:"'Playfair Display',serif"}}>{mg.length}/{filteredData.lessons.length}</div><div style={{fontSize:12,color:"#6889a8",marginTop:4}}>Leçons</div></div>
           <div style={{padding:"12px 20px",background:"#e8f0e8",borderRadius:12,textAlign:"center"}}><div style={{fontSize:24,fontWeight:700,color:"#3a6b3a",fontFamily:"'Playfair Display',serif"}}>{avg}/20</div><div style={{fontSize:12,color:"#5a7a5a",marginTop:4}}>Moyenne</div></div>
           <div style={{padding:"12px 20px",background:ts.pct>=80?"#e8f0e8":ts.pct>=50?"#fef9e7":"#fde8e8",borderRadius:12,textAlign:"center"}}><div style={{fontSize:24,fontWeight:700,color:ts.pct>=80?"#3a6b3a":ts.pct>=50?"#856d12":"#922b21",fontFamily:"'Playfair Display',serif"}}>{ts.pct}%</div><div style={{fontSize:12,color:"#6889a8",marginTop:4}}>Dîme ({ts.paid}/{ts.total})</div></div>
         </div>
@@ -917,7 +1067,7 @@ export default function CMCIApp() {
         <button style={btnP} onClick={()=>setModal("addGrade")}>{I.plus} Ajouter Note</button>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:12}}>
-        {data.lessons.map(ls=>{const grade=data.grades.find(g=>g.memberId===member.id&&g.lessonId===ls.id);return(
+        {filteredData.lessons.map(ls=>{const grade=filteredData.grades.find(g=>g.memberId===member.id&&g.lessonId===ls.id);return(
           <div key={ls.id} style={{background:"#fff",borderRadius:12,padding:16,border:"1px solid #d4e4f4",opacity:grade?1:.5}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <span style={{fontSize:12,color:"#3b9bd9",fontWeight:700}}>Leçon {ls.number}</span>
@@ -943,7 +1093,7 @@ export default function CMCIApp() {
     const [lId,sLId]=useState("");
     const [n,sN]=useState("");
     const [l,sL]=useState("");
-    const selRegion=data.regions.find(r=>r.id===rId);
+    const selRegion=filteredData.regions.find(r=>r.id===rId);
     const locs=selRegion?selRegion.localites:[];
     return(<Modal open={modal==="addEgliseGlobal"} onClose={()=>{setModal(null);sRId("");sLId("");}} title="Nouvelle Église de Maison">
       <div style={{display:"flex",flexDirection:"column",gap:16}}>
@@ -951,7 +1101,7 @@ export default function CMCIApp() {
           <label style={lblS}>Région</label>
           <select style={inpS} value={rId} onChange={e=>{sRId(e.target.value);sLId("");}}>
             <option value="">— Choisir une région —</option>
-            {data.regions.map(r=>(<option key={r.id} value={r.id}>{r.name}</option>))}
+            {filteredData.regions.map(r=>(<option key={r.id} value={r.id}>{r.name}</option>))}
           </select>
         </div>
         {rId&&<div>
@@ -1003,7 +1153,7 @@ export default function CMCIApp() {
 
   function MdAddLesson(){const [t,sT]=useState("");const [d,sD]=useState("");return(<Modal open={modal==="addLesson"} onClose={()=>setModal(null)} title="Nouvelle Leçon"><div style={{display:"flex",flexDirection:"column",gap:16}}><div><label style={lblS}>Titre</label><input style={inpS} value={t} onChange={e=>sT(e.target.value)} placeholder="Ex: Le Pardon"/></div><div><label style={lblS}>Description</label><textarea style={{...inpS,minHeight:60,resize:"vertical"}} value={d} onChange={e=>sD(e.target.value)} placeholder="Brève description"/></div><button style={btnP} onClick={()=>{if(!t.trim())return;upd(da=>{da.lessons.push({id:uid(),number:da.lessons.length+1,title:t,description:d});});setModal(null);}}>{I.check} Ajouter</button></div></Modal>);}
 
-  function MdAddGrade({member}){const [li,sLi]=useState("");const [sc,sSc]=useState("");if(!member) return null;const ex=data.grades.filter(g=>g.memberId===member.id).map(g=>g.lessonId);const av=data.lessons.filter(ls=>!ex.includes(ls.id));return(<Modal open={modal==="addGrade"} onClose={()=>setModal(null)} title={`Note — ${member.name}`}><div style={{display:"flex",flexDirection:"column",gap:16}}><div><label style={lblS}>Leçon</label><select style={inpS} value={li} onChange={e=>sLi(e.target.value)}><option value="">— Choisir —</option>{av.map(ls=>(<option key={ls.id} value={ls.id}>Leçon {ls.number}: {ls.title}</option>))}</select></div><div><label style={lblS}>Note (/20)</label><input style={inpS} type="number" min="0" max="20" value={sc} onChange={e=>sSc(e.target.value)} placeholder="Ex: 16"/></div><button style={btnP} onClick={()=>{if(!li||!sc)return;upd(d=>{d.grades.push({memberId:member.id,lessonId:li,score:parseInt(sc),date:new Date().toISOString().slice(0,10)});});setModal(null);}}>{I.check} Enregistrer</button></div></Modal>);}
+  function MdAddGrade({member}){const [li,sLi]=useState("");const [sc,sSc]=useState("");if(!member) return null;const ex=filteredData.grades.filter(g=>g.memberId===member.id).map(g=>g.lessonId);const av=filteredData.lessons.filter(ls=>!ex.includes(ls.id));return(<Modal open={modal==="addGrade"} onClose={()=>setModal(null)} title={`Note — ${member.name}`}><div style={{display:"flex",flexDirection:"column",gap:16}}><div><label style={lblS}>Leçon</label><select style={inpS} value={li} onChange={e=>sLi(e.target.value)}><option value="">— Choisir —</option>{av.map(ls=>(<option key={ls.id} value={ls.id}>Leçon {ls.number}: {ls.title}</option>))}</select></div><div><label style={lblS}>Note (/20)</label><input style={inpS} type="number" min="0" max="20" value={sc} onChange={e=>sSc(e.target.value)} placeholder="Ex: 16"/></div><button style={btnP} onClick={()=>{if(!li||!sc)return;upd(d=>{d.grades.push({memberId:member.id,lessonId:li,score:parseInt(sc),date:new Date().toISOString().slice(0,10)});});setModal(null);}}>{I.check} Enregistrer</button></div></Modal>);}
 
   const page=()=>{switch(view){case "dashboard":return <PgDash/>;case "regions":return <PgRegions/>;case "localites":return <PgAllLocalites/>;case "eglises":return <PgAllEglises/>;case "eglise-detail":return <PgEgliseDet/>;case "tithe":return <PgTithe/>;case "reports":return <PgReports/>;case "lessons":return <PgLessons/>;case "progress":return <PgProgress/>;case "member-detail":return <PgMemberProg/>;default:return <PgDash/>;}};
 
@@ -1036,7 +1186,11 @@ export default function CMCIApp() {
             {item.icon}{item.label}
           </button>))}
         </div>
-        <div style={{padding:"16px 20px",borderTop:"1px solid rgba(255,255,255,0.08)",fontSize:11,color:"rgba(255,255,255,0.3)"}}>CMCI Sénégal © 2026</div>
+        <div style={{padding:"12px 16px",borderTop:"1px solid rgba(255,255,255,0.08)"}}>
+          <div style={{fontSize:11,color:"#3b9bd9",fontWeight:600,marginBottom:2}}>{user?.role==="national"?"🌍 National":user?.role==="region"?"📍 Région":user?.role==="localite"?"🏘️ Localité":"🏠 Église"}</div>
+          <div style={{fontSize:11,color:"rgba(255,255,255,0.5)",marginBottom:8,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{user?.name||""}</div>
+          <button onClick={()=>setUser(null)} style={{width:"100%",padding:"6px 12px",background:"rgba(255,255,255,0.08)",color:"rgba(255,255,255,0.6)",border:"none",borderRadius:8,cursor:"pointer",fontSize:11,fontFamily:"'DM Sans',sans-serif"}}>Déconnexion</button>
+        </div>
       </nav>
 
       {sidebarOpen&&<div className="overlay" onClick={()=>setSidebarOpen(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",zIndex:1040,display:"none"}}/>}
