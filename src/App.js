@@ -146,7 +146,6 @@ const getEvolutionByMonth = (items, dateField, months=6) => {
 function MiniChart({ data: chartData, color, height = 50 }) {
   if (!chartData || chartData.length === 0) return null;
   const max = Math.max(...chartData.map(d => d.count), 1);
-  const w = 100 / chartData.length;
   return (
     <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height, width: "100%" }}>
       {chartData.map((d, i) => (
@@ -261,7 +260,6 @@ export default function CMCIApp() {
     const evoMembers = getEvolutionByMonth(allM, "joinDate", 6);
     const allLocs = []; data.regions.forEach(r=>r.localites.forEach(l=>allLocs.push(l)));
     const evoLoc = getEvolutionByMonth(allLocs, "createdDate", 6);
-    const evoRegions = getEvolutionByMonth(data.regions, "createdDate", 6);
 
     // Previous month for comparison
     const prevMembers = evoMembers.length >= 2 ? evoMembers[evoMembers.length - 2].count : 0;
