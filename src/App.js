@@ -348,8 +348,6 @@ export default function CMCIApp() {
   const allE=useMemo(()=>getAllEglises(data),[data]);
   const allM=useMemo(()=>getAllMembers(data),[data]);
 
-  const gTR=useMemo(()=>{if(!visibleMembers.length)return 0;let s=0;visibleMembers.forEach(m=>{s+=getTitheStats(filteredData,m.id,m.egliseId).pct;});return Math.round(s/visibleMembers.length);},[filteredData,visibleMembers]);
-
   // Filtered data based on role - deep filtering
   const filteredData=useMemo(()=>{
     if(!user||user.role==="national") return data;
@@ -378,6 +376,8 @@ export default function CMCIApp() {
 
   const visibleEglises=useMemo(()=>getAllEglises(filteredData),[filteredData]);
   const visibleMembers=useMemo(()=>getAllMembers(filteredData),[filteredData]);
+
+  const gTR=useMemo(()=>{if(!visibleMembers.length)return 0;let s=0;visibleMembers.forEach(m=>{s+=getTitheStats(filteredData,m.id,m.egliseId).pct;});return Math.round(s/visibleMembers.length);},[filteredData,visibleMembers]);
 
   const navItems=useMemo(()=>{
     const r=user?.role||"national";
