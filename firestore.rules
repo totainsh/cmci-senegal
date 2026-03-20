@@ -1,0 +1,80 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helpers ──
+    function isLoggedIn() {
+      return request.auth != null;
+    }
+
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isAdmin() {
+      return isLoggedIn() && getUserRole() == 'admin';
+    }
+
+    function isDirigeant() {
+      return isLoggedIn() && getUserRole() == 'dirigeant';
+    }
+
+    // ── Users ──
+    match /users/{userId} {
+      allow read: if isLoggedIn();
+      allow write: if request.auth.uid == userId || isAdmin();
+    }
+
+    // ── Régions ──
+    match /regions/{regionId} {
+      allow read: if isLoggedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ── Localités ──
+    match /localites/{localiteId} {
+      allow read: if isLoggedIn();
+      allow create, update, delete: if isAdmin() || isDirigeant();
+    }
+
+    // ── Églises de maison ──
+    match /eglises/{egliseId} {
+      allow read: if isLoggedIn();
+      allow create, update, delete: if isAdmin() || isDirigeant();
+    }
+
+    // ── Membres ──
+    match /membres/{membreId} {
+      allow read: if isLoggedIn();
+      allow create, update: if isAdmin() || isDirigeant();
+      allow delete: if isAdmin();
+    }
+
+    // ── Rapports ──
+    match /rapports/{rapportId} {
+      allow read: if isLoggedIn();
+      allow create, update: if isAdmin() || isDirigeant();
+      allow delete: if isAdmin();
+    }
+
+    // ── Leçons (Message de Bertoua) ──
+    match /lecons/{leconId} {
+      allow read: if isLoggedIn();
+      allow write: if isAdmin();
+    }
+
+    // ── Progressions ──
+    match /progressions/{progressionId} {
+      allow read: if isLoggedIn();
+      allow create, update: if isAdmin() || isDirigeant();
+      allow delete: if isAdmin();
+    }
+
+    // ── Dîmes ──
+    match /dimes/{dimeId} {
+      allow read: if isLoggedIn();
+      allow create, update: if isAdmin() || isDirigeant();
+      allow delete: if isAdmin();
+    }
+  }
+}

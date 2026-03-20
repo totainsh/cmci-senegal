@@ -1,16 +1,16 @@
 {
   "short_name": "CMCI Sénégal",
-  "name": "CMCI Sénégal — Gestion des Églises",
-  "description": "Application de gestion des églises de maison, membres, rapports et leçons pour la CMCI Sénégal",
+  "name": "CMCI Sénégal - Gestion d'Église",
+  "description": "Application de gestion pour la CMCI Sénégal",
   "icons": [
     {
-      "src": "icon-192.png",
+      "src": "logo192.png",
       "type": "image/png",
       "sizes": "192x192",
       "purpose": "any maskable"
     },
     {
-      "src": "icon-512.png",
+      "src": "logo512.png",
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "any maskable"
@@ -18,9 +18,7 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#0a2a4a",
-  "background_color": "#f0f5fb",
-  "orientation": "portrait-primary",
-  "lang": "fr",
-  "categories": ["lifestyle", "productivity"]
+  "theme_color": "#1a3a5c",
+  "background_color": "#1a3a5c",
+  "orientation": "portrait"
 }
